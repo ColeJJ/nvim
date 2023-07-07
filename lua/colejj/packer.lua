@@ -32,7 +32,6 @@ return require('packer').startup(function(use)
   use { "neanias/everforest-nvim" }
   use { 'shaunsingh/nord.nvim' }
   use { 'rose-pine/neovim', as = 'rose-pine' }
-  use {'akinsho/bufferline.nvim', tag = "*", requires = 'nvim-tree/nvim-web-devicons'}
   -- File Icons 
   use { "nvim-tree/nvim-web-devicons" }
   -- Nvimtree (File Explorer)
@@ -52,7 +51,7 @@ return require('packer').startup(function(use)
   use ('jiangmiao/auto-pairs')
   -- autopairs for html
   use ('alvan/vim-closetag')
-  -- commenting
+  -- commenting -> comment shortcuts
   use ('numToStr/Comment.nvim')
 
   -- prettier and null ls
