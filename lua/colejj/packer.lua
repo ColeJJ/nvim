@@ -59,7 +59,10 @@ return require('packer').startup(function(use)
   use { "folke/trouble.nvim" }
   -- lualine for statusline style
   use { 'nvim-lualine/lualine.nvim' }
+  -- merge conflicts
+  use { 'akinsho/git-conflict.nvim', tag = "*" }
 
+  -- LANGUAGES
   -- lsp
   use {
     'VonHeikemen/lsp-zero.nvim',
