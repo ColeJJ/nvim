@@ -92,22 +92,20 @@ return require('packer').startup(function(use)
     }
   }
 
-  -- go lang 
-  use ('fatih/vim-go',{ run = ':GoUpdateBinaries' })
-
-  -- java 
-  use 'mfussenegger/nvim-jdtls'
-
   -- Debugger
   use "mfussenegger/nvim-dap"
   use 'rcarriga/cmp-dap'
   use "rcarriga/nvim-dap-ui"
   use "theHamsta/nvim-dap-virtual-text"
   use "nvim-telescope/telescope-dap.nvim"
-  use {
-    "leoluz/nvim-dap-go",
-    requires = {{"mfussenegger/nvim-dap"}}
-  }
+
+  -- go lang 
+  use ('fatih/vim-go',{ run = ':GoUpdateBinaries' })
+  use { "leoluz/nvim-dap-go" }
+
+  -- java 
+  use 'mfussenegger/nvim-jdtls'
+
   -- vim be good
   use 'ThePrimeagen/vim-be-good'
 end)
