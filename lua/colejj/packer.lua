@@ -57,6 +57,8 @@ return require('packer').startup(function(use)
   use('MunifTanjim/prettier.nvim')
   -- Trouble -> area showing all the errors and warnings in the file
   use { "folke/trouble.nvim" }
+  -- lualine for statusline style
+  use { 'nvim-lualine/lualine.nvim' }
 
   -- lsp
   use {
