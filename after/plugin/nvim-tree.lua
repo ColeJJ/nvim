@@ -19,10 +19,6 @@ nvim_tree.setup({
         enable = true,
         update_cwd = true,
     },
-    filters = {
-        custom = { ".git" },
-        exclude = { ".gitignore" },
-    },
     renderer = {
         add_trailing = false,
         root_folder_modifier = ":t",
