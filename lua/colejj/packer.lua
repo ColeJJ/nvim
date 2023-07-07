@@ -26,7 +26,7 @@ return require('packer').startup(function(use)
   }
 
 
-  -- THEMES & APPEARANCE
+  -- THEMES & EDITOR 
   -- Themes
   use { "catppuccin/nvim", name = "catppuccin" }
   use { "neanias/everforest-nvim" }
@@ -38,8 +38,6 @@ return require('packer').startup(function(use)
   use { 'nvim-tree/nvim-tree.lua' }
   -- Which-key -> window with possible key bindings 
   use { 'folke/which-key.nvim' }
-
-  -- CODING
   use ('nvim-treesitter/nvim-treesitter', {run = ':TSUpdate'})
   -- local windows switching
   use ('theprimeagen/harpoon')
@@ -53,10 +51,12 @@ return require('packer').startup(function(use)
   use ('alvan/vim-closetag')
   -- commenting -> comment shortcuts
   use ('numToStr/Comment.nvim')
-
   -- prettier and null ls
   use('jose-elias-alvarez/null-ls.nvim')
+  -- TODO: Remove?
   use('MunifTanjim/prettier.nvim')
+  -- Trouble -> area showing all the errors and warnings in the file
+  use { "folke/trouble.nvim" }
 
   -- lsp
   use {
