@@ -21,7 +21,6 @@ vim.opt.undofile = true
 vim.opt.hlsearch = false
 vim.opt.incsearch = true
 
-vim.opt.termguicolors = true
 
 vim.opt.scrolloff = 8
 vim.opt.signcolumn = "yes"
@@ -35,3 +34,8 @@ vim.g.mapleader = " "
 vim.opt.colorcolumn = ""
 
 vim.g.fillchars='eob: '
+
+
+-- highlights
+vim.opt.termguicolors = true
+vim.opt.cursorline = true
