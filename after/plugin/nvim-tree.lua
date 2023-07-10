@@ -12,7 +12,7 @@ nvim_tree.setup({
     hijack_cursor = true,
     hijack_unnamed_buffer_when_opening = false,
     hijack_directories = {
-        enable = false,
+        enable = true,
     },
     sync_root_with_cwd = true,
     update_focused_file = {
@@ -82,6 +82,9 @@ nvim_tree.setup({
     view = {
         width = 30,
         side = "left",
+    },
+    filters = {
+        dotfiles = false
     }
 })
 
