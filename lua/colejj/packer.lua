@@ -51,10 +51,8 @@ return require('packer').startup(function(use)
   use ('alvan/vim-closetag')
   -- commenting -> comment shortcuts
   use ('numToStr/Comment.nvim')
-  -- prettier and null ls
+  -- prettier with null ls
   use('jose-elias-alvarez/null-ls.nvim')
-  -- TODO: Remove?
-  use('MunifTanjim/prettier.nvim')
   -- Trouble -> area showing all the errors and warnings in the file
   use { "folke/trouble.nvim" }
   -- lualine for statusline style
