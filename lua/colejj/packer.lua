@@ -25,6 +25,8 @@ return require('packer').startup(function(use)
 	  requires = { {'nvim-lua/plenary.nvim'}, {'nvim-telescope/telescope.nvim'}}
   }
 
+  -- tmux
+  use { 'christoomey/vim-tmux-navigator' }
 
   -- THEMES & EDITOR 
   -- Themes
