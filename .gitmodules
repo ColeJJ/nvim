@@ -1,0 +1,3 @@
+[submodule "config_folders/vscode-php-debug"]
+	path = config_folders/vscode-php-debug
+	url = https://github.com/xdebug/vscode-php-debug.git
