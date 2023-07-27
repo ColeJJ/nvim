@@ -1,2 +1,2 @@
-./config_folders/
-./plugin/packer_compiled.lua
+./config_folders/*
+./plugin/*
