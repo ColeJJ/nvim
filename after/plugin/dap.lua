@@ -6,7 +6,7 @@ local dapGo = require("dap-go")
 dap.adapters.php = {
   type = 'executable',
   command = 'node',
-  -- TODO: path for wsl different 
+  -- clone this into ./config_folders -> https://github.com/xdebug/vscode-php-debug
   args = { os.getenv("HOME") .. '/.config/nvim/config_folders/vscode-php-debug/out/phpDebug.js' }
 }
 
