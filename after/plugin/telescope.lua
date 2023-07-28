@@ -42,14 +42,15 @@ vim.keymap.set('n', '<leader>ff', function()
         no_ignore = false,
         hidden = true
 }) end, ns)
-vim.keymap.set('n', '<leader>gf', function() builtin.git_files() end, ns)
+vim.keymap.set('n', '<leader>fg', function() builtin.git_files() end, ns)
+vim.keymap.set('n', '<leader>fc', function() builtin.git_commits() end, ns)
 vim.keymap.set('n', '<leader>gr', function() builtin.live_grep() end, ns)
 vim.keymap.set('n', '<leader>me', function() telescope.extensions.monorepo.monorepo() end, ns)
 vim.keymap.set('n', '<leader>ma', function() monorepo.add_project() end, ns)
 vim.keymap.set('n', '<leader>md', function() monorepo.remove_project() end, ns)
-vim.keymap.set('n', '<leader>fb', function()
-    telescope.extensions.file_browser.file_browser({
-        path = "%:p:h",
-        cwd = telescope_buffer_dir(),
-        respect_gitignore = false,
-    }) end, ns)
+-- vim.keymap.set('n', '<leader>fb', function()
+--     telescope.extensions.file_browser.file_browser({
+--         path = "%:p:h",
+--         cwd = telescope_buffer_dir(),
+--         respect_gitignore = false,
+--     }) end, ns)
