@@ -31,9 +31,9 @@ return require('packer').startup(function(use)
   -- THEMES & EDITOR 
   -- Themes
   use { "catppuccin/nvim", name = "catppuccin" }
-  use { "neanias/everforest-nvim" }
-  use { 'shaunsingh/nord.nvim' }
   use { 'rose-pine/neovim', as = 'rose-pine' }
+  use { 'navarasu/onedark.nvim' }
+  use { 'Mofiqul/vscode.nvim' }
   -- File Icons 
   use { "nvim-tree/nvim-web-devicons" }
   -- Nvimtree (File Explorer)
