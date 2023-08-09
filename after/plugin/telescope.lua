@@ -25,6 +25,13 @@ telescope.setup({
     },
 })
 
+require("dir-telescope").setup({
+    -- these are the default options set
+    hidden = true,
+    no_ignore = true,
+    show_preview = true,
+})
+
 -- monorepo
 monorepo.setup({
     silent = true,
@@ -35,22 +42,19 @@ monorepo.setup({
 telescope.load_extension('fzf')
 telescope.load_extension('file_browser')
 telescope.load_extension('monorepo')
+telescope.load_extension("dir")
 
 -- mappings
 vim.keymap.set('n', '<leader>ff', function()
     builtin.find_files({
-        no_ignore = false,
+        no_ignore = true,
         hidden = true
 }) end, ns)
 vim.keymap.set('n', '<leader>fg', function() builtin.git_files() end, ns)
 vim.keymap.set('n', '<leader>fc', function() builtin.git_commits() end, ns)
 vim.keymap.set('n', '<leader>gr', function() builtin.live_grep() end, ns)
+vim.keymap.set("n", "<leader>fd", function() telescope.extensions.dir.find_files() end, ns)
+vim.keymap.set("n", "<leader>gd", function() telescope.extensions.dir.live_grep() end, ns)
 vim.keymap.set('n', '<leader>me', function() telescope.extensions.monorepo.monorepo() end, ns)
 vim.keymap.set('n', '<leader>ma', function() monorepo.add_project() end, ns)
 vim.keymap.set('n', '<leader>md', function() monorepo.remove_project() end, ns)
--- vim.keymap.set('n', '<leader>fb', function()
---     telescope.extensions.file_browser.file_browser({
---         path = "%:p:h",
---         cwd = telescope_buffer_dir(),
---         respect_gitignore = false,
---     }) end, ns)
