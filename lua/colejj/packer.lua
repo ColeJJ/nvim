@@ -24,16 +24,14 @@ return require('packer').startup(function(use)
 	  -- or                            , branch = '0.1.x',
 	  requires = { {'nvim-lua/plenary.nvim'}, {'nvim-telescope/telescope.nvim'}}
   }
+  use { 'cljoly/telescope-repo.nvim' }
 
   -- tmux
   use { 'christoomey/vim-tmux-navigator' }
 
   -- THEMES & EDITOR 
   -- Themes
-  use { "catppuccin/nvim", name = "catppuccin" }
   use { 'rose-pine/neovim', as = 'rose-pine' }
-  use { 'navarasu/onedark.nvim' }
-  use { 'Mofiqul/vscode.nvim' }
   -- File Icons 
   use { "nvim-tree/nvim-web-devicons" }
   -- Nvimtree (File Explorer)
@@ -108,4 +106,13 @@ return require('packer').startup(function(use)
 
   -- vim be good
   use 'ThePrimeagen/vim-be-good'
+
+  -- Obsidian
+  use({
+      "epwalsh/obsidian.nvim",
+      requires = {
+          -- Required.
+          "nvim-lua/plenary.nvim",
+      }
+  })
 end)
