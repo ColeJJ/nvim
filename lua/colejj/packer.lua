@@ -108,15 +108,10 @@ return require('packer').startup(function(use)
   -- java 
   use 'mfussenegger/nvim-jdtls'
 
+  -- markdown
+  -- install without yarn or npm
+  use({ "iamcco/markdown-preview.nvim", run = "cd app && npm install", setup = function() vim.g.mkdp_filetypes = { "markdown" } end, ft = { "markdown" }, })
+
   -- vim be good
   use 'ThePrimeagen/vim-be-good'
-
-  -- Obsidian
-  use({
-      "epwalsh/obsidian.nvim",
-      requires = {
-          -- Required.
-          "nvim-lua/plenary.nvim",
-      }
-  })
 end)
