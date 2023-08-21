@@ -43,6 +43,7 @@ telescope.load_extension('fzf')
 telescope.load_extension('file_browser')
 telescope.load_extension('monorepo')
 telescope.load_extension("dir")
+telescope.load_extension("git_worktree")
 
 -- mappings
 vim.keymap.set('n', '<leader>ff', function()

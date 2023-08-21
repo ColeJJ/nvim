@@ -49,6 +49,7 @@ return require('packer').startup(function(use)
   use ('mbbill/undotree')
   -- git 
   use ('tpope/vim-fugitive')
+  use { 'ThePrimeagen/git-worktree.nvim' }
   -- autopairs
   use ('jiangmiao/auto-pairs')
   -- autopairs for html
