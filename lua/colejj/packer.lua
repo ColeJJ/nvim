@@ -18,7 +18,6 @@ return require('packer').startup(function(use)
         'junegunn/fzf.vim',
         requires = { {'junegunn/fzf'} }
     }
-    use 'nvim-telescope/telescope-file-browser.nvim'
     use {
         'imNel/monorepo.nvim',
         -- or                            , branch = '0.1.x',

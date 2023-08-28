@@ -18,10 +18,6 @@ telescope.setup({
             override_file_sorter = true,
             case_mode = "smart_case",
         },
-        file_browser = {
-            theme = "dropdown",
-            hijack_netrw = false,
-        }
     },
 })
 
@@ -40,7 +36,6 @@ monorepo.setup({
 })
 
 telescope.load_extension('fzf')
-telescope.load_extension('file_browser')
 telescope.load_extension('monorepo')
 telescope.load_extension("dir")
 telescope.load_extension("git_worktree")
