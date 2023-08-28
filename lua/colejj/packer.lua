@@ -64,6 +64,8 @@ return require('packer').startup(function(use)
   use { 'nvim-lualine/lualine.nvim' }
   -- merge conflicts
   use { 'akinsho/git-conflict.nvim', tag = "*" }
+  -- indent scope lines
+  use { "lukas-reineke/indent-blankline.nvim" }
 
   -- LANGUAGES
   -- lsp
