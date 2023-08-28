@@ -1,10 +1,6 @@
 local telescope = require('telescope')
 local builtin = require('telescope.builtin')
 local monorepo = require("monorepo")
-local ns = { noremap = true, silent = true }
-local function telescope_buffer_dir()
-    return vim.fn.expand('%:p:h')
-end
 
 telescope.setup({
     defaults = {
@@ -41,6 +37,7 @@ telescope.load_extension("dir")
 telescope.load_extension("git_worktree")
 
 -- mappings
+local ns = { noremap = true, silent = true }
 vim.keymap.set('n', '<leader>ff', function()
     builtin.find_files({
         no_ignore = false,
