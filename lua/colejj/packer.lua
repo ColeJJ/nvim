@@ -43,6 +43,10 @@ return require('packer').startup(function(use)
     use { 'nvim-tree/nvim-tree.lua' }
     -- Which-key -> window with possible key bindings 
     use { 'folke/which-key.nvim' }
+    use {
+        'nvim-treesitter/nvim-treesitter',
+        run = ':TSUpdate'
+    }
     use({
         "nvim-treesitter/nvim-treesitter-textobjects",
         after = "nvim-treesitter",
@@ -114,9 +118,18 @@ use { "leoluz/nvim-dap-go" }
 -- java 
 use 'mfussenegger/nvim-jdtls'
 
+-- NOTE TAKING
 -- markdown
 -- install without yarn or npm
 use({ "iamcco/markdown-preview.nvim", run = "cd app && npm install", setup = function() vim.g.mkdp_filetypes = { "markdown" } end, ft = { "markdown" }, })
+-- norg 
+use {
+    "nvim-neorg/neorg",
+    after = "nvim-treesitter", -- Ensures that neorg loads after nvim-treesitter
+    run = ":Neorg sync-parsers",
+    requires = { "nvim-lua/plenary.nvim", "nvim-neorg/neorg-telescope" },
+    tag = "*"
+}
 
 -- vim be good
 use 'ThePrimeagen/vim-be-good'

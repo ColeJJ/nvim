@@ -23,7 +23,11 @@ vim.opt.updatetime = 50
 
 vim.opt.colorcolumn = "80"
 
+-- sets <space> as leader 
 vim.g.mapleader = " "
+-- sets <space> as localleader 
+vim.g.maplocalleader = " "
+
 vim.opt.colorcolumn = ""
 
 vim.g.fillchars='eob: '
