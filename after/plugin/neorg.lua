@@ -13,25 +13,17 @@ require('neorg').setup {
                 default_workspace = "codebase"
             }
         },
+        ["core.autocommands"] = {},
         ["core.concealer"] = {
             config = {
                 icon_preset = "diamond",
-                markup_preset = "dimmed",
-                dim_code_blocks = {
-                    enabled = true,
-                },
-                code_block = {
-                    conceal = true
-                }
-            },
+            }
         }, -- loads nice icons and visuals
-        ["core.syntax"] = {}, -- fallback if treesitter is not working
         ["core.completion"] = { -- autocompletion for neorg
             config = {
                 engine = "nvim-cmp"
             }
         },
-        ["core.promo"] = {}, -- indent lines with << or >> 
     }
 }
 
