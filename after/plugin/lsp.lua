@@ -6,7 +6,8 @@ lsp.ensure_installed({
 	'tsserver',
 	'eslint',
 	'lua_ls',
-    'intelephense'
+    'intelephense',
+    'angularls'
 })
 
 -- Fix undefined var 'vim'

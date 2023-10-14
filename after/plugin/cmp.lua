@@ -1,5 +1,10 @@
 local cmp = require('cmp')
 
+-- load snippets
+require("luasnip.loaders.from_vscode").lazy_load()
+require('luasnip').filetype_extend("html", {"angular"})
+require('luasnip').filetype_extend("ts", {"angular"})
+
 cmp.setup({
     enabled = function()
         return vim.api.nvim_buf_get_option(0, "buftype") ~= "prompt"
