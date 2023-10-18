@@ -18,11 +18,7 @@ return require('packer').startup(function(use)
         -- or                            , branch = '0.1.x',
         requires = { {'nvim-lua/plenary.nvim'}, {'nvim-telescope/telescope.nvim'}}
     }
-    use({
-        "princejoogie/dir-telescope.nvim",
-        -- telescope.nvim is a required dependency
-        requires = {"nvim-telescope/telescope.nvim"},
-    })
+    use {"nvim-telescope/telescope.nvim"}
 
     -- tmux
     use { 'christoomey/vim-tmux-navigator' }
@@ -34,8 +30,6 @@ return require('packer').startup(function(use)
     use { "nvim-tree/nvim-web-devicons" }
     -- Nvimtree (File Explorer)
     use { 'nvim-tree/nvim-tree.lua' }
-    -- Which-key -> window with possible key bindings 
-    use { 'folke/which-key.nvim' }
     use {
         'nvim-treesitter/nvim-treesitter',
         run = ':TSUpdate'
