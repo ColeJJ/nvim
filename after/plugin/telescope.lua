@@ -4,8 +4,8 @@ local monorepo = require("monorepo")
 
 telescope.setup({
     defaults = {
-        find_command = { 'fd', '--hidden', '--type', 'f', 'git', 'ls-files', '--exclude-standard', '--cached', '--others', '-v'},
-        file_ignore_patterns = { ".git", "node_modules/" },
+        find_command = { 'fd', '--hidden', '--type', 'f', 'ls-tree', '--full-tree'},
+        file_ignore_patterns = { ".git", "node_modules/*" , ".gitignore"},
     },
     extensions = {
         fzf = {
