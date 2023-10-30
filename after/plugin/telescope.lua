@@ -31,11 +31,6 @@ telescope.load_extension("git_worktree")
 local ns = { noremap = true, silent = true }
 vim.keymap.set('n', '<leader>ff', function()
     builtin.find_files({
-        no_ignore = false,
-        hidden = true
-}) end, ns)
-vim.keymap.set('n', '<leader>fa', function()
-    builtin.find_files({
         no_ignore = true,
         hidden = true
 }) end, ns)
