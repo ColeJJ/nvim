@@ -22,6 +22,7 @@ return require('packer').startup(function(use)
 
     -- tmux
     use { 'christoomey/vim-tmux-navigator' }
+    use { 'camgraff/telescope-tmux.nvim' }
 
     -- THEMES & EDITOR 
     -- Themes

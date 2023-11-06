@@ -58,3 +58,5 @@ neorg_callbacks.on_event("core.keybinds.events.enable_keybinds", function(_, key
         noremap = true,
     })
 end)
+-- tmux
+vim.keymap.set('n', '<leader>ft', ':Telescope tmux windows<CR>', ns)
