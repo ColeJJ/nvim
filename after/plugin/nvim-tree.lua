@@ -26,7 +26,7 @@ nvim_tree.setup({
         highlight_opened_files = "none",
         -- These icons are visible when you install web-devicons
         indent_markers = {
-            enable = false,
+            enable = true,
             icons = {
                 corner = "└ ",
                 edge = "│ ",
@@ -48,6 +48,8 @@ nvim_tree.setup({
                 default = "",
                 symlink = "",
                 folder = {
+                    -- arrow_closed = "",
+                    -- arrow_open = "",
                     arrow_open = "",
                     arrow_closed = "",
                     default = "",
@@ -73,7 +75,7 @@ nvim_tree.setup({
         enable = true,
         show_on_dirs = true,
         icons = {
-            hint = "",
+            hint = "",
             info = "",
             warning = "",
             error = "",
