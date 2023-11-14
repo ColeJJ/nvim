@@ -20,16 +20,6 @@ vim.keymap.set({'n', 'v'}, '<leader>dx', function()
   require('dapui').close()
 end)
 
-
--- GO 
-local dapGo = require('dap-go')
-vim.keymap.set('n', '<leader>dgt', function()
-  dapGo.debug_test()
-end)
-vim.keymap.set('n', '<leader>dgl', function()
-  dapGo.debug_last()
-end)
-
 -- PART 4 - Keymaps --
 -- Keymaps --
 

@@ -7,7 +7,7 @@ return require('packer').startup(function(use)
     -- Packer can manage itself
     use 'wbthomason/packer.nvim'
 
-    -- file and folder finder
+    -- FINDER 
     use { 'nvim-telescope/telescope-fzf-native.nvim', run = 'make' }
     use {
         'junegunn/fzf.vim',
@@ -24,11 +24,14 @@ return require('packer').startup(function(use)
     use { 'christoomey/vim-tmux-navigator' }
     use { 'camgraff/telescope-tmux.nvim' }
 
-    -- THEMES & EDITOR 
-    -- Themes
+    -- THEMES & APPEARANCE
     use { 'rose-pine/neovim', as = 'rose-pine' }
     -- File Icons 
     use { "nvim-tree/nvim-web-devicons" }
+    -- putting nvim cmd into central ui 
+    use {'stevearc/dressing.nvim'}
+
+    -- EDITOR
     -- Nvimtree (File Explorer)
     use { 'nvim-tree/nvim-tree.lua' }
     use {
@@ -53,8 +56,6 @@ return require('packer').startup(function(use)
     use ('alvan/vim-closetag')
     -- commenting -> comment shortcuts
     use ('numToStr/Comment.nvim')
-    -- prettier with null ls
-    use('jose-elias-alvarez/null-ls.nvim')
     -- Trouble -> area showing all the errors and warnings in the file
     use { "folke/trouble.nvim" }
     -- lualine for statusline style
@@ -71,54 +72,57 @@ return require('packer').startup(function(use)
             -- LSP Support
             {'neovim/nvim-lspconfig'},             -- Required
             {                                      -- Optional
-                'williamboman/mason.nvim',
-                run = function()
-                    pcall(vim.cmd, 'MasonUpdate')
-                end,
-            },
-            {'williamboman/mason-lspconfig.nvim'}, -- Optional
+            'williamboman/mason.nvim',
+            run = function()
+                pcall(vim.cmd, 'MasonUpdate')
+            end,
+        },
+        {'williamboman/mason-lspconfig.nvim'}, -- Optional
 
-            -- Autocompletion
-            {'hrsh7th/nvim-cmp'},         -- Required
-            {'hrsh7th/cmp-nvim-lsp'},     -- Required
-            {'hrsh7th/cmp-buffer'},       -- Optional
-            {'hrsh7th/cmp-path'},         -- Optional
-            {'saadparwaiz1/cmp_luasnip'}, -- Optional
-            {'hrsh7th/cmp-nvim-lua'},     -- Optional
+        -- Autocompletion
+        {'hrsh7th/nvim-cmp'},         -- Required
+        {'hrsh7th/cmp-nvim-lsp'},     -- Required
+        {'hrsh7th/cmp-buffer'},       -- source for text in buffer 
+        {'hrsh7th/cmp-path'},         -- source for file system paths 
+        {'saadparwaiz1/cmp_luasnip'}, -- completion for snippets 
+        {'hrsh7th/cmp-nvim-lua'},     -- Optional
+        {'hrsh7th/cmp-emoji'},         -- Emojis
 
-            -- Snippets
-            {'L3MON4D3/LuaSnip', requires = {'rafamadriz/friendly-snippets'}}, -- Required
-            {'rafamadriz/friendly-snippets'}, -- Optional
-        }
-    }
+        -- Icons for CMP
+        {'onsails/lspkind-nvim'},     -- Optional
 
--- Debugger
-use "mfussenegger/nvim-dap"
-use 'rcarriga/cmp-dap'
-use "rcarriga/nvim-dap-ui"
-use "theHamsta/nvim-dap-virtual-text"
-use "nvim-telescope/telescope-dap.nvim"
+        -- Snippets
+        {'L3MON4D3/LuaSnip', requires = {'rafamadriz/friendly-snippets'}}, -- snippet engine 
+        {'rafamadriz/friendly-snippets'}, -- useful snippets 
+    },
 
--- go lang 
-use ('fatih/vim-go',{ run = ':GoUpdateBinaries' })
-use { "leoluz/nvim-dap-go" }
+    -- Debugger
+    use "mfussenegger/nvim-dap",
+    use 'rcarriga/cmp-dap',
+    use "rcarriga/nvim-dap-ui",
+    use "theHamsta/nvim-dap-virtual-text",
+    use "nvim-telescope/telescope-dap.nvim",
 
--- java 
-use 'mfussenegger/nvim-jdtls'
+    -- NOTE TAKING
+    -- markdown
+    -- install without yarn or npm
+    use({
+        "iamcco/markdown-preview.nvim",
+        run = "cd app && npm install",
+        setup = function()
+            vim.g.mkdp_filetypes = { "markdown" } 
+        end,
+        ft = { "markdown" }, }),
+    -- norg 
+    use {
+        "nvim-neorg/neorg",
+        after = "nvim-treesitter", -- Ensures that neorg loads after nvim-treesitter
+        run = ":Neorg sync-parsers",
+        requires = { "nvim-lua/plenary.nvim", "nvim-neorg/neorg-telescope" },
+        tag = "*"
+    },
 
--- NOTE TAKING
--- markdown
--- install without yarn or npm
-use({ "iamcco/markdown-preview.nvim", run = "cd app && npm install", setup = function() vim.g.mkdp_filetypes = { "markdown" } end, ft = { "markdown" }, })
--- norg 
-use {
-    "nvim-neorg/neorg",
-    after = "nvim-treesitter", -- Ensures that neorg loads after nvim-treesitter
-    run = ":Neorg sync-parsers",
-    requires = { "nvim-lua/plenary.nvim", "nvim-neorg/neorg-telescope" },
-    tag = "*"
+    -- vim be good
+    use 'ThePrimeagen/vim-be-good',
 }
-
--- vim be good
-use 'ThePrimeagen/vim-be-good'
 end)

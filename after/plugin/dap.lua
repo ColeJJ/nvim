@@ -1,6 +1,5 @@
 local dap = require("dap")
 local dapui = require("dapui")
-local dapGo = require("dap-go")
 
 -- PHP
 dap.adapters.php = {
@@ -26,9 +25,6 @@ dap.configurations.php = {
     port = 9003
   }
 }
-
--- GO
-dapGo.setup()
 
 -- maps
 require("colejj.debugmaps")
