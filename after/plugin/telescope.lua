@@ -45,6 +45,11 @@ vim.keymap.set('n', '<leader>ma',function() monorepo.add_project() end, ns)
 vim.keymap.set('n', '<leader>md',function() monorepo.remove_project() end, ns)
 vim.keymap.set('n', '<leader>/', function() require('telescope.builtin').current_buffer_fuzzy_find() end, { desc = '[/] Fuzzily search in current buffer' })
 vim.keymap.set('n', '<leader>?', require('telescope.builtin').help_tags, { desc = '[F]ind [H]elp' })
+-- tmux
+vim.keymap.set('n', '<leader>ft', ':Telescope tmux windows<CR>', ns)
+-- git worktree
+vim.keymap.set('n', '<leader>gt', function() telescope.extensions.git_worktree.git_worktrees() end, ns)
+vim.keymap.set('n', '<leader>gc', function() telescope.extensions.git_worktree.create_git_worktree() end, ns)
 -- neorg
 local neorg_callbacks = require("neorg.core.callbacks")
 neorg_callbacks.on_event("core.keybinds.events.enable_keybinds", function(_, keybinds)
@@ -58,5 +63,3 @@ neorg_callbacks.on_event("core.keybinds.events.enable_keybinds", function(_, key
         noremap = true,
     })
 end)
--- tmux
-vim.keymap.set('n', '<leader>ft', ':Telescope tmux windows<CR>', ns)
