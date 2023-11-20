@@ -1,3 +1,6 @@
+-- keep cursor fat
+vim.opt.guicursor = ""
+
 vim.g.loaded_netrw = 1
 vim.g.loaded_netrwPlugin = 1
 
@@ -47,11 +50,3 @@ vim.opt.smartindent = true
 -- Format: HTML
 vim.g.html_indent_style1 = "auto"
 vim.g.html_indent_script1 = "auto"
-
--- Automatically format the current line after leaving Insert mode
--- vim.cmd([[
--- augroup FormatOnLeave
---     autocmd!
---     autocmd InsertLeave * normal ==O
--- augroup END
--- ]])
