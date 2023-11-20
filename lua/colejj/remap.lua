@@ -22,9 +22,6 @@ vim.keymap.set("n", "<leader>Y", "\"+Y")
 -- prevent from pressing capital Q
 vim.keymap.set("n", "Q", "<nop>")
 
--- change windows 
-vim.keymap.set('n', '<leader><Tab>', '<C-w>w')
-
 -- tmux project switching
 vim.keymap.set('n', '<C-f>', '<cmd>silent !tmux neww tmux-sessionizer<CR>')
 
