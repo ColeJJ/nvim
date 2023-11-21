@@ -20,7 +20,7 @@ return require('packer').startup(function(use)
     }
     use {"nvim-telescope/telescope.nvim"}
 
-    -- tmux
+    -- TMUX 
     use { 'christoomey/vim-tmux-navigator' }
     use { 'camgraff/telescope-tmux.nvim' }
 
@@ -52,6 +52,8 @@ return require('packer').startup(function(use)
     use { 'ThePrimeagen/git-worktree.nvim' }
     -- autopairs
     use ('jiangmiao/auto-pairs')
+    -- prettier / formatting
+    use {'sbdchd/neoformat'}
     -- autopairs for html
     use ('alvan/vim-closetag')
     -- commenting -> comment shortcuts
