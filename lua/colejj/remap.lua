@@ -27,3 +27,6 @@ vim.keymap.set('n', '<C-f>', '<cmd>silent !tmux neww tmux-sessionizer<CR>')
 
 -- replacing the word you are currently on
 vim.keymap.set("n", "<leader>r", [[:%s/\<<C-r><C-w>\>/<C-r><C-w>/gI<Left><Left><Left>]])
+
+-- change windows 
+vim.keymap.set('n', '<leader><Tab>', '<C-w>w')
