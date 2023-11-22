@@ -126,5 +126,8 @@ return require('packer').startup(function(use)
 
     -- vim be good
     use 'ThePrimeagen/vim-be-good',
+
+    -- leetcode nvim
+    use {'mbledkowski/neuleetcode.vim'}
 }
 end)
