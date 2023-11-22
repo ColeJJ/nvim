@@ -5,11 +5,9 @@ local dap = require('dap')
 vim.keymap.set('n', '<leader>dd', function() require('dap').continue() end)
 vim.keymap.set('n', '<leader>db', function() dap.toggle_breakpoint() end, opts)
 vim.keymap.set('n', '<leader>dc', function() dap.set_breakpoint(vim.fn.input('Breakpoint condition: ')) end, opts)
-vim.keymap.set('n', '<leader>dr', function() require('dap').repl.open() end)
 vim.keymap.set('n', '<leader>dl', function() require('dap').run_last() end)
-vim.keymap.set({'n', 'v'}, '<leader>du', function()
-  require('dapui').toggle()
-end)
+vim.keymap.set({'n', 'v'}, '<leader>du', function() require('dapui').toggle() end)
+vim.keymap.set({'n', 'v'}, '<leader>dr', function() require('dapui').open({reset = true}) end)
 
 -- PART 4 - Keymaps --
 -- Keymaps --
