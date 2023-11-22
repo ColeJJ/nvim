@@ -2,22 +2,13 @@ local opts = { noremap = true, silent = true }
 local dap = require('dap')
 
 -- setup debug
-
-vim.keymap.set('n', '<leader>dc', function() require('dap').continue() end)
-vim.keymap.set('n', '<F10>', function() require('dap').step_over() end)
-vim.keymap.set('n', '<F11>', function() require('dap').step_into() end)
-vim.keymap.set('n', '<F12>', function() require('dap').step_out() end)
+vim.keymap.set('n', '<leader>dd', function() require('dap').continue() end)
 vim.keymap.set('n', '<leader>db', function() dap.toggle_breakpoint() end, opts)
+vim.keymap.set('n', '<leader>dc', function() dap.set_breakpoint(vim.fn.input('Breakpoint condition: ')) end, opts)
 vim.keymap.set('n', '<leader>dr', function() require('dap').repl.open() end)
 vim.keymap.set('n', '<leader>dl', function() require('dap').run_last() end)
-vim.keymap.set({'n', 'v'}, '<leader>do', function()
-  require('dapui').open()
-end)
 vim.keymap.set({'n', 'v'}, '<leader>du', function()
   require('dapui').toggle()
-end)
-vim.keymap.set({'n', 'v'}, '<leader>dx', function()
-  require('dapui').close()
 end)
 
 -- PART 4 - Keymaps --
