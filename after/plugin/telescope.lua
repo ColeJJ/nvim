@@ -6,6 +6,14 @@ telescope.setup({
     defaults = {
         find_command = { 'fd', '--hidden', '--type', 'f', 'ls-tree', '--full-tree'},
         file_ignore_patterns = { ".git", "node_modules/*" , ".gitignore", "dist/*"},
+        layout_strategy = 'vertical',
+        layout_config = {
+            vertical = {
+                prompt_position = "bottom",
+                mirror = false,
+                preview_cutoff = 0
+            },
+        }
     },
     extensions = {
         fzf = {
