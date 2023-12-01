@@ -25,14 +25,14 @@ nvim_tree.setup({
         -- "none", "icon", "all", "name"
         highlight_opened_files = "none",
         -- These icons are visible when you install web-devicons
-        indent_markers = {
-            enable = true,
-            icons = {
-                corner = "└ ",
-                edge = "│ ",
-                none = "  ",
-            },
-        },
+        -- indent_markers = {
+        --     enable = true,
+        --     icons = {
+        --         corner = "└ ",
+        --         edge = "│ ",
+        --         none = "  ",
+        --     },
+        -- },
         icons = {
             webdev_colors = true,
             git_placement = "before",
