@@ -23,7 +23,8 @@ vim.keymap.set("n", "<leader>Y", "\"+Y")
 vim.keymap.set("n", "Q", "<nop>")
 
 -- tmux project switching
-vim.keymap.set('n', '<C-f>', '<cmd>silent !tmux neww tmux-sessionizer<CR>')
+vim.keymap.set('n', '<C-f>', '<cmd>silent !tmux neww ~/.config/tmux/tmux-sessionizer.sh<CR>')
+vim.keymap.set('n', '<C-c>', '<cmd>silent !tmux neww ~/.config/tmux/tmux-cht.sh<CR>')
 
 -- replacing the word you are currently on
 vim.keymap.set("n", "<leader>r", [[:%s/\<<C-r><C-w>\>/<C-r><C-w>/gI<Left><Left><Left>]])
