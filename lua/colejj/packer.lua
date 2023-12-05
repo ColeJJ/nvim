@@ -104,17 +104,17 @@ return require('packer').startup(function(use)
     use "rcarriga/nvim-dap-ui",
     use "theHamsta/nvim-dap-virtual-text",
     use "nvim-telescope/telescope-dap.nvim",
+    use {
+        "mxsdev/nvim-dap-vscode-js",
+        requires = {"mfussenegger/nvim-dap"}
+    },
+    use {
+        "microsoft/vscode-js-debug",
+        opt = true,
+        run = "npm install --legacy-peer-deps && npx gulp vsDebugServerBundle && mv dist out"
+    },
 
     -- NOTE TAKING
-    -- markdown
-    -- install without yarn or npm
-    use({
-        "iamcco/markdown-preview.nvim",
-        run = "cd app && npm install",
-        setup = function()
-            vim.g.mkdp_filetypes = { "markdown" } 
-        end,
-        ft = { "markdown" }, }),
     -- norg 
     use {
         "nvim-neorg/neorg",
