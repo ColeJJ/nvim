@@ -8,9 +8,9 @@ vim.g.neoformat_enabled_javascript = {'prettier'}
 vim.g.neoformat_enabled_php = {'prettier'}
 
 -- autoformating when saving
-vim.api.nvim_exec([[
-  augroup fmt
-    autocmd!
-    autocmd BufWritePre * undojoin | Neoformat
-  augroup END
-]], false)
+-- vim.api.nvim_exec([[
+--   augroup fmt
+--     autocmd!
+--     autocmd BufWritePre * undojoin | Neoformat
+--   augroup END
+-- ]], false)
