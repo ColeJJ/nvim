@@ -11,7 +11,9 @@ telescope.setup({
             vertical = {
                 prompt_position = "bottom",
                 mirror = false,
-                preview_cutoff = 0
+                preview_cutoff = 0,
+                height = 0.9,
+                width = 0.8
             },
         }
     },
