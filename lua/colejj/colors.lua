@@ -26,13 +26,11 @@ Color.new("superwhite", "#E0E0E0")
 Color.new("softwhite", "#ebdbb2")
 Color.new("teal", "#018080")
 
-
 Group.new("WinSeparator", nil, nil)
 Group.new("@variable", c.superwhite, nil)
 Group.new("@variable.builtin", c.purple:light():light(), nil)
 
 -- Vim Editor
--- TODO: change line color changed
 Group.new("Normal", c.superwhite, c.background)
 Group.new("InvNormal", c.gray0, c.gray5)
 Group.new("NormalFloat", g.normal.fg:light(), g.normal.bg:dark())
@@ -51,9 +49,9 @@ Group.new("PMenuThumb", nil, c.gray4)
 -- Group.new("qfFileName", c.yellow, nil, s.bold)
 
 -- Tabline
-Group.new("TabLine", c.blue:dark(), c.gray1, s.none)
+-- Group.new("TabLine", c.blue:dark(), c.gray1, s.none)
 Group.new("TabLineFill", c.softwhite, c.gray3, s.none)
-Group.new("TabLineSel", c.gray7:light(), c.gray1, s.bold)
+-- Group.new("TabLineSel", c.gray7:light(), c.gray1, s.bold)
 
 -- Statusline Colors
 Group.new("StatusLine", c.gray2, c.blue, nil)
