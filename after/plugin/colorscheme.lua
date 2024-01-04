@@ -31,7 +31,7 @@ Group.new("StatuslineError3", c.red, g.Statusline)
 Group.new("StatuslineError3", c.red:dark(), g.Statusline)
 Group.new("StatuslineError3", c.red:dark():dark(), g.Statusline)
 
-Group.new("pythonTSType", c.red)
+Group.new("pythonTSType", c.superwhite)
 Group.new("goTSType", g.Type.fg:dark(), nil, g.Type)
 
 Group.new("typescriptTSConstructor", g.pythonTSType)
