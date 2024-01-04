@@ -113,10 +113,10 @@ Group.new("Type", c.violet, nil, s.italic)
 -- MatchParen
 -- Group.new("MatchParen", c.cyan)
 
-vim.cmd [[
+vim.cmd([[
     hi link @lsp.type.variable variable
     hi link @function.call functionCall
     hi link @lsp.type.namespace @namespace
     hi link @punctuation.bracket.rapper @text.literal
     hi link @normal Normal
-]]
+]])
