@@ -73,10 +73,10 @@ Group.new("Function", c.yellow, nil, s.bold)
 
 -- Special Characters
 Group.new("Special", c.purple:light(), nil, s.bold)
-Group.new("SpecialChar", c.brown)
-Group.new("NonText", c.gray2:light(), nil, s.italic)
-Group.new("WhiteSpace", c.purple)
-Group.new("Conceal", g.Normal.bg, c.gray2:light(), s.italic)
+-- Group.new("SpecialChar", c.brown)
+-- Group.new("NonText", c.gray2:light(), nil, s.italic)
+-- Group.new("WhiteSpace", c.purple)
+-- Group.new("Conceal", g.Normal.bg, c.gray2:light(), s.italic)
 
 -- Searching
 -- Group.new("Search", c.gray1, c.yellow)
@@ -108,7 +108,7 @@ Group.new("Typedef", c.yellow)
 Group.new("Type", c.violet, nil, s.italic)
 
 -- Folded Items
-Group.new("Folded", c.gray3:dark(), c.gray2:light())
+-- Group.new("Folded", c.gray3:dark(), c.gray2:light())
 
 -- MatchParen
 -- Group.new("MatchParen", c.cyan)
