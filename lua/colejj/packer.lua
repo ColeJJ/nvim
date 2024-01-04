@@ -25,7 +25,9 @@ return require('packer').startup(function(use)
     use { 'camgraff/telescope-tmux.nvim' }
 
     -- THEMES & APPEARANCE
-    use { 'rose-pine/neovim', as = 'rose-pine' }
+    use { 'tjdevries/colorbuddy.vim' }
+    use { 'tjdevries/gruvbuddy.nvim' }
+    use { 'norcalli/nvim-colorizer.lua' }
     -- File Icons 
     use { "nvim-tree/nvim-web-devicons" }
     -- putting nvim cmd into central ui 
