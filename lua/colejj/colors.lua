@@ -1,9 +1,5 @@
 require('colorizer').setup()
-local Color = require('colorbuddy').Color
-local c = require("colorbuddy.color").colors
-local Group = require("colorbuddy.group").Group
-local g = require("colorbuddy.group").groups
-local s = require("colorbuddy.style").styles
+local Color, c, Group, g, s= require("colorbuddy").setup()
 
 -- colors
 Color.new('white',     '#f2e5bc')
@@ -27,8 +23,6 @@ Color.new("softwhite", "#ebdbb2")
 Color.new("teal", "#018080")
 
 Group.new("WinSeparator", nil, nil)
-Group.new("@variable", c.superwhite, nil)
-Group.new("@variable.builtin", c.purple:light():light(), nil)
 
 -- Vim Editor
 Group.new("Normal", c.superwhite, c.background)
@@ -42,16 +36,11 @@ Group.new("SignColumn", c.gray3, c.background)
 -- Popup Menu
 Group.new("PMenu", c.gray4, c.background)
 Group.new("PMenuSel", c.gray0, c.yellow:light())
-Group.new("PMenuSbar", nil, c.gray0)
-Group.new("PMenuThumb", nil, c.gray4)
-
--- Quickfix Menu
--- Group.new("qfFileName", c.yellow, nil, s.bold)
+Group.new("PMenuSbar", c.none, c.gray0)
+Group.new("PMenuThumb", c.none, c.gray4)
 
 -- Tabline
--- Group.new("TabLine", c.blue:dark(), c.gray1, s.none)
 Group.new("TabLineFill", c.softwhite, c.gray3, s.none)
--- Group.new("TabLineSel", c.gray7:light(), c.gray1, s.bold)
 
 -- Statusline Colors
 Group.new("StatusLine", c.gray2, c.blue, nil)
@@ -68,22 +57,15 @@ Group.new("VisualMode", g.Visual, g.Visual)
 Group.new("VisualLineMode", g.Visual, g.Visual)
 
 -- Function
-Group.new("functionCall", c.yellow, nil, s.bold)
-Group.new("Function", c.yellow, nil, s.bold)
+Group.new("functionCall", c.yellow, c.none, s.bold)
+Group.new("Function", c.yellow, c.none, s.bold)
 
 -- Special Characters
 Group.new("Special", c.purple:light(), nil, s.bold)
--- Group.new("SpecialChar", c.brown)
--- Group.new("NonText", c.gray2:light(), nil, s.italic)
--- Group.new("WhiteSpace", c.purple)
--- Group.new("Conceal", g.Normal.bg, c.gray2:light(), s.italic)
-
--- Searching
--- Group.new("Search", c.gray1, c.yellow)
 
 -- Standard syntax
 Group.new("Boolean", c.orange)
-Group.new("Comment", c.gray3:light(), nil, s.italic)
+Group.new("Comment", c.gray3:light(), c.none, s.italic)
 Group.new("Character", c.red)
 Group.new("Conditional", c.red)
 Group.new("Define", c.cyan)
@@ -94,27 +76,16 @@ Group.new("Constant", c.orange, nil, s.bold)
 Group.new("Identifier", c.red, nil, s.bold)
 Group.new("Include", c.cyan)
 Group.new("Keyword", c.violet)
--- Group.new("Label", c.yellow)
 Group.new("Operator", c.red:light():light())
--- Group.new("PreProc", c.yellow)
--- Group.new("Repeat", c.red)
--- Group.new("Statement", c.red:dark(0.1))
--- Group.new("StorageClass", c.yellow)
 Group.new("String", c.green)
 Group.new("Structure", c.violet)
--- Group.new("Tag", c.yellow)
--- Group.new("Todo", c.yellow)
 Group.new("Typedef", c.yellow)
 Group.new("Type", c.violet, nil, s.italic)
-
--- Folded Items
--- Group.new("Folded", c.gray3:dark(), c.gray2:light())
-
--- MatchParen
--- Group.new("MatchParen", c.cyan)
+Group.new("@variable", c.superwhite, nil)
+Group.new("@variable.builtin", c.purple:light():light(), nil)
 
 vim.cmd([[
-    hi link @lsp.type.variable variable
+    hi link @lsp.type.variable variable 
     hi link @function.call functionCall
     hi link @lsp.type.namespace @namespace
     hi link @punctuation.bracket.rapper @text.literal
