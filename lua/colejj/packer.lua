@@ -40,14 +40,10 @@ return require('packer').startup(function(use)
         after = "nvim-treesitter",
         requires = "nvim-treesitter/nvim-treesitter",
     })
-    -- File Icons 
-    use { "nvim-tree/nvim-web-devicons" }
     -- putting nvim cmd into central ui 
     use {'stevearc/dressing.nvim'}
 
     -- EDITOR
-    -- Nvimtree (File Explorer)
-    use { 'nvim-tree/nvim-tree.lua' }
     use {
         'nvim-treesitter/nvim-treesitter',
         run = ':TSUpdate'
