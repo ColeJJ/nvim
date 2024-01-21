@@ -7,41 +7,41 @@ return require('packer').startup(function(use)
     -- Packer can manage itself
     use 'wbthomason/packer.nvim'
 
-    -- FINDER 
+    -- FINDER
     use { 'nvim-telescope/telescope-fzf-native.nvim', run = 'make' }
     use {
         'junegunn/fzf.vim',
-        requires = { {'junegunn/fzf'} }
+        requires = { { 'junegunn/fzf' } }
     }
     use {
         'imNel/monorepo.nvim',
         -- or                            , branch = '0.1.x',
-        requires = { {'nvim-lua/plenary.nvim'}, {'nvim-telescope/telescope.nvim'}}
+        requires = { { 'nvim-lua/plenary.nvim' }, { 'nvim-telescope/telescope.nvim' } }
     }
-    use {"nvim-telescope/telescope.nvim"}
+    use { "nvim-telescope/telescope.nvim" }
 
-    -- TMUX 
+    -- TMUX
     use { 'christoomey/vim-tmux-navigator' }
     use { 'camgraff/telescope-tmux.nvim' }
 
     -- THEMES & APPEARANCE
-    use ({
+    use({
         'tjdevries/colorbuddy.vim',
         after = "nvim-treesitter",
         requires = "nvim-treesitter/nvim-treesitter",
     })
-    use ({
+    use({
         'tjdevries/gruvbuddy.nvim',
         after = "nvim-treesitter",
         requires = "nvim-treesitter/nvim-treesitter",
     })
-    use ({
+    use({
         'norcalli/nvim-colorizer.lua',
         after = "nvim-treesitter",
         requires = "nvim-treesitter/nvim-treesitter",
     })
-    -- putting nvim cmd into central ui 
-    use {'stevearc/dressing.nvim'}
+    -- putting nvim cmd into central ui
+    use { 'stevearc/dressing.nvim' }
 
     -- EDITOR
     use {
@@ -54,90 +54,86 @@ return require('packer').startup(function(use)
         requires = "nvim-treesitter/nvim-treesitter",
     })
     -- local windows switching
-    use ('theprimeagen/harpoon')
+    use('theprimeagen/harpoon')
     -- local branches and changes
-    use ('mbbill/undotree')
-    -- git 
-    use ('tpope/vim-fugitive')
+    use('mbbill/undotree')
+    -- git
+    use('tpope/vim-fugitive')
     use { 'ThePrimeagen/git-worktree.nvim' }
     -- autopairs
-    use ('jiangmiao/auto-pairs')
+    use('jiangmiao/auto-pairs')
     -- prettier / formatting
-    use {'sbdchd/neoformat'}
+    use { "stevearc/conform.nvim" }
     -- autopairs for html
-    use ('alvan/vim-closetag')
+    use('alvan/vim-closetag')
     -- commenting -> comment shortcuts
-    use ('numToStr/Comment.nvim')
-    -- Trouble -> area showing all the errors and warnings in the file
-    use { "folke/trouble.nvim" }
+    use('numToStr/Comment.nvim')
     -- lualine for statusline style
     use { 'nvim-lualine/lualine.nvim' }
     -- merge conflicts
     use { 'akinsho/git-conflict.nvim', tag = "*" }
 
     -- LANGUAGES
+    -- linting
+    use { 'mfussenegger/nvim-lint' }
     -- lsp
     use {
         'VonHeikemen/lsp-zero.nvim',
         branch = 'v1.x',
         requires = {
             -- LSP Support
-            {'neovim/nvim-lspconfig'},             -- Required
-            {                                      -- Optional
-            'williamboman/mason.nvim',
-            run = function()
-                pcall(vim.cmd, 'MasonUpdate')
-            end,
+            { 'neovim/nvim-lspconfig' }, -- Required
+            {                            -- Optional
+                'williamboman/mason.nvim',
+                run = function()
+                    pcall(vim.cmd, 'MasonUpdate')
+                end,
+            },
+            { 'williamboman/mason-lspconfig.nvim' }, -- Optional
+
+            -- Autocompletion
+            { 'hrsh7th/nvim-cmp' },         -- Required
+            { 'hrsh7th/cmp-nvim-lsp' },     -- Required
+            { 'hrsh7th/cmp-buffer' },       -- source for text in buffer
+            { 'hrsh7th/cmp-path' },         -- source for file system paths
+            { 'saadparwaiz1/cmp_luasnip' }, -- completion for snippets
+            { 'hrsh7th/cmp-nvim-lua' },     -- Optional
+            { 'hrsh7th/cmp-emoji' },        -- Emojis
+
+            -- Icons for CMP
+            { 'onsails/lspkind-nvim' }, -- Optional
+
+            -- Snippets
+            { 'L3MON4D3/LuaSnip',                 requires = { 'rafamadriz/friendly-snippets' } }, -- snippet engine
+            { 'rafamadriz/friendly-snippets' },                                                    -- useful snippets
         },
-        {'williamboman/mason-lspconfig.nvim'}, -- Optional
 
-        -- Autocompletion
-        {'hrsh7th/nvim-cmp'},         -- Required
-        {'hrsh7th/cmp-nvim-lsp'},     -- Required
-        {'hrsh7th/cmp-buffer'},       -- source for text in buffer 
-        {'hrsh7th/cmp-path'},         -- source for file system paths 
-        {'saadparwaiz1/cmp_luasnip'}, -- completion for snippets 
-        {'hrsh7th/cmp-nvim-lua'},     -- Optional
-        {'hrsh7th/cmp-emoji'},         -- Emojis
+        -- Debugger
+        use "mfussenegger/nvim-dap",
+        use 'rcarriga/cmp-dap',
+        use "rcarriga/nvim-dap-ui",
+        use "theHamsta/nvim-dap-virtual-text",
+        use "nvim-telescope/telescope-dap.nvim",
+        use {
+            "mxsdev/nvim-dap-vscode-js",
+            requires = { "mfussenegger/nvim-dap" }
+        },
+        use { "microsoft/vscode-js-debug" },
 
-        -- Icons for CMP
-        {'onsails/lspkind-nvim'},     -- Optional
+        -- NOTE TAKING
+        -- norg
+        use {
+            "nvim-neorg/neorg",
+            after = "nvim-treesitter", -- Ensures that neorg loads after nvim-treesitter
+            run = ":Neorg sync-parsers",
+            requires = { "nvim-lua/plenary.nvim", "nvim-neorg/neorg-telescope" },
+            tag = "*"
+        },
 
-        -- Snippets
-        {'L3MON4D3/LuaSnip', requires = {'rafamadriz/friendly-snippets'}}, -- snippet engine 
-        {'rafamadriz/friendly-snippets'}, -- useful snippets 
-    },
+        -- vim be good
+        use 'ThePrimeagen/vim-be-good',
 
-    -- Debugger
-    use "mfussenegger/nvim-dap",
-    use 'rcarriga/cmp-dap',
-    use "rcarriga/nvim-dap-ui",
-    use "theHamsta/nvim-dap-virtual-text",
-    use "nvim-telescope/telescope-dap.nvim",
-    use {
-        "mxsdev/nvim-dap-vscode-js",
-        requires = {"mfussenegger/nvim-dap"}
-    },
-    use {
-        "microsoft/vscode-js-debug",
-        opt = true,
-        run = "npm install --legacy-peer-deps && npx gulp vsDebugServerBundle && mv dist out"
-    },
-
-    -- NOTE TAKING
-    -- norg 
-    use {
-        "nvim-neorg/neorg",
-        after = "nvim-treesitter", -- Ensures that neorg loads after nvim-treesitter
-        run = ":Neorg sync-parsers",
-        requires = { "nvim-lua/plenary.nvim", "nvim-neorg/neorg-telescope" },
-        tag = "*"
-    },
-
-    -- vim be good
-    use 'ThePrimeagen/vim-be-good',
-
-    -- leetcode nvim
-    use {'mbledkowski/neuleetcode.vim'}
-}
+        -- leetcode nvim
+        use { 'mbledkowski/neuleetcode.vim' }
+    }
 end)
