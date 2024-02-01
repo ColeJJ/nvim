@@ -60,6 +60,7 @@ return require('packer').startup(function(use)
     -- git
     use('tpope/vim-fugitive')
     use { 'ThePrimeagen/git-worktree.nvim' }
+    use { 'kdheepak/lazygit.nvim' }
     -- autopairs
     use('jiangmiao/auto-pairs')
     -- prettier / formatting
