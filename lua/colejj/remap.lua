@@ -46,4 +46,4 @@ vim.keymap.set('n', '<BS>', 'b')
 vim.keymap.set('v', '<BS>', 'b')
 
 -- lazygit
-vim.keymap.set('n', '<leader>gs', '<cmd>LazyGit<CR>')
+vim.keymap.set('n', '<leader>gs', '<cmd>LazyGitCurrentFile<CR>')
