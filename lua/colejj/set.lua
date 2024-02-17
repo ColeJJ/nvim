@@ -24,6 +24,9 @@ vim.g.maplocalleader = " "
 
 vim.opt.colorcolumn = ""
 
+-- need this column left to prevent window resizing all the time
+vim.opt.signcolumn = "yes"
+
 -- highlights
 vim.opt.termguicolors = true
 vim.opt.cursorline = true
