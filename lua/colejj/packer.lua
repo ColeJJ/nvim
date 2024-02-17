@@ -42,6 +42,8 @@ return require('packer').startup(function(use)
     })
     -- putting nvim cmd into central ui
     use { 'stevearc/dressing.nvim' }
+    -- using web devicons
+    use { 'nvim-tree/nvim-web-devicons' }
 
     -- EDITOR
     use {
@@ -73,6 +75,8 @@ return require('packer').startup(function(use)
     use { 'nvim-lualine/lualine.nvim' }
     -- merge conflicts
     use { 'akinsho/git-conflict.nvim', tag = "*" }
+    -- tree
+    use { 'nvim-tree/nvim-tree.lua' }
 
     -- LANGUAGES
     -- linting
@@ -118,17 +122,6 @@ return require('packer').startup(function(use)
         use {
             "mxsdev/nvim-dap-vscode-js",
             requires = { "mfussenegger/nvim-dap" }
-        },
-        use { "microsoft/vscode-js-debug" },
-
-        -- NOTE TAKING
-        -- norg
-        use {
-            "nvim-neorg/neorg",
-            after = "nvim-treesitter", -- Ensures that neorg loads after nvim-treesitter
-            run = ":Neorg sync-parsers",
-            requires = { "nvim-lua/plenary.nvim", "nvim-neorg/neorg-telescope" },
-            tag = "*"
         },
 
         -- vim be good

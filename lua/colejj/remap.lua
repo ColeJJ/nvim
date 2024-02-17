@@ -1,7 +1,6 @@
-vim.g.mapleader = " "
-
--- nerd tree
-vim.keymap.set("n", "<leader>t", vim.cmd.Ex)
+-- disable nerdtree
+vim.g.loaded_netrw = 1
+vim.g.loaded_netrwPlugin = 1
 
 -- move lines above or down in v mode 
 vim.keymap.set("v", "J", ":m '>+1<CR>gv=gv")
@@ -44,6 +43,3 @@ vim.keymap.set('n', '<leader>l', '5<C-w>>')
 -- normal mode jumping of w and b for space and backspace
 vim.keymap.set('n', '<BS>', 'b')
 vim.keymap.set('v', '<BS>', 'b')
-
--- lazygit
-vim.keymap.set('n', '<leader>gs', '<cmd>LazyGitCurrentFile<CR>')

@@ -57,16 +57,3 @@ vim.keymap.set('n', '<leader>/', function() require('telescope.builtin').current
 vim.keymap.set('n', '<leader>?', require('telescope.builtin').help_tags, { desc = '[F]ind [H]elp' })
 -- tmux
 vim.keymap.set('n', '<leader>ft', ':Telescope tmux windows<CR>', ns)
--- neorg
-local neorg_callbacks = require("neorg.core.callbacks")
-neorg_callbacks.on_event("core.keybinds.events.enable_keybinds", function(_, keybinds)
-    -- Map all the below keybinds only when the "norg" mode is active
-    keybinds.map_event_to_mode("norg", {
-        n = { -- Bind keys in normal mode
-            { "<leader>fn", "core.integrations.telescope.find_linkable" },
-        }
-    }, {
-        silent = true,
-        noremap = true,
-    })
-end)

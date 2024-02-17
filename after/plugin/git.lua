@@ -7,3 +7,4 @@ require'git-conflict'.setup({})
 
 -- keybindings
 vim.keymap.set('n', '<leader>gc', '<cmd>GitConflictListQf<CR>')
+vim.keymap.set('n', '<leader>gs', '<cmd>LazyGitCurrentFile<CR>')
