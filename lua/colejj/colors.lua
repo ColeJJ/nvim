@@ -1,5 +1,11 @@
 require('colorizer').setup()
-local Color, c, Group, g, s= require("colorbuddy").setup()
+require("colorbuddy").setup()
+
+local Color = require("colorbuddy.color").Color
+local c = require("colorbuddy.color").colors
+local Group = require("colorbuddy.group").Group
+local g = require("colorbuddy.group").groups
+local s = require("colorbuddy.style").styles
 
 -- colors
 Color.new('white',     '#f2e5bc')
@@ -26,12 +32,13 @@ Group.new("WinSeparator", nil, nil)
 
 -- Vim Editor
 Group.new("Normal", c.superwhite, c.background)
-Group.new("InvNormal", c.gray0, c.gray5)
-Group.new("NormalFloat", g.normal.fg:light(), g.normal.bg:dark())
-Group.new("FloatBorder", c.gray0:light(), g.NormalFloat)
 Group.new("LineNr", c.gray3, c.background)
 Group.new("EndOfBuffer", c.gray3)
 Group.new("SignColumn", c.gray3, c.background)
+
+-- this here makes the popup orange
+-- Group.new("NormalFloat", g.normal.fg:light(), g.normal.bg:dark())
+-- Group.new("FloatBorder", c.gray0:light(), g.NormalFloat)
 
 -- Popup Menu
 Group.new("PMenu", c.gray4, c.background)
