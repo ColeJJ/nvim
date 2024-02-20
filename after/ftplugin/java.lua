@@ -3,8 +3,8 @@
 -- 'nvim/ftplugin/java.lua'.
 -- 'nvim/lang-servers/intellij-java-google-style.xml'
 
-local jdtls_ok, jdtls = pcall(require, "jdtls")
-if not jdtls_ok then
+local jdtls = pcall(require, "jdtls")
+if not jdtls then
   vim.notify "JDTLS not found, install with `:LspInstall jdtls`"
   return
 end
@@ -17,6 +17,7 @@ local path_to_plugins = jdtls_path .. "/plugins/"
 local path_to_jar = path_to_plugins .. "org.eclipse.equinox.launcher_1.6.400.v20210924-0641.jar"
 local lombok_path = jdtls_path .. "/lombok.jar"
 local jvm_path = '/Library/Java/JavaVirtualMachines'
+local jdk_21_path = jvm_path .. '/jdk-21.jdk'
 local jdk_20_path = jvm_path .. '/jdk-20.jdk'
 local jdk_19_path = jvm_path .. '/jdk-19.jdk'
 local jdk_17_path= jvm_path .. '/jdk-17.jdk'
@@ -34,7 +35,7 @@ end
 
 -- WORKSPACE WITHOUT PROJECT
 local HOME = os.getenv "HOME"
-local workspace_dir = HOME .. "/ghq/java_workspaces/neovim_ws/"
+local workspace_dir = HOME .. "/personal/java_workspaces/neovim_ws/"
 
 -- os.execute("mkdir " .. workspace_dir)
 
@@ -89,10 +90,14 @@ local config = {
   -- for a list of options
   settings = {
     java = {
-      home = jvm_path .. jdk_20_path .. '/Contents/Home',
+      home = jvm_path .. jdk_21_path .. '/Contents/Home',
       configuration = {
         updateBuildConfiguration = "interactive",
         runtimes = {
+          {
+            name = "JavaSE-21",
+            path = jdk_21_path .. "/Contents/Home",
+          },
           {
             name = "JavaSE-20",
             path = jdk_20_path .. "/Contents/Home",

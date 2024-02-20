@@ -113,6 +113,9 @@ return require('packer').startup(function(use)
             { 'rafamadriz/friendly-snippets' },                                                    -- useful snippets
         },
 
+        -- java
+        use { 'mfussenegger/nvim-jdtls' },
+
         -- Debugger
         use "mfussenegger/nvim-dap",
         use 'rcarriga/cmp-dap',
