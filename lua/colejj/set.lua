@@ -1,3 +1,8 @@
+-- sets <space> as leader 
+vim.g.mapleader = " "
+-- sets <space> as localleader 
+vim.g.localleader = " "
+
 -- disable nerdtree
 vim.g.loaded_netrw = 1
 vim.g.loaded_netrwPlugin = 1
@@ -16,11 +21,6 @@ vim.opt.hlsearch = false
 vim.opt.incsearch = true
 
 vim.opt.scrolloff = 8
-
--- sets <space> as leader 
-vim.g.mapleader = " "
--- sets <space> as localleader 
-vim.g.maplocalleader = " "
 
 vim.opt.colorcolumn = ""
 
