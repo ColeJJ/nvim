@@ -14,7 +14,7 @@ end
 local jdtls_path = vim.fn.stdpath('data') .. "/mason/packages/jdtls"
 local path_to_config_server = jdtls_path .. "/config_mac"
 local path_to_plugins = jdtls_path .. "/plugins/"
-local path_to_jar = path_to_plugins .. "org.eclipse.equinox.launcher_1.6.400.v20210924-0641.jar"
+local path_to_jar = path_to_plugins .. "org.eclipse.equinox.launcher_1.6.700.v20231214-2017.jar"
 local lombok_path = jdtls_path .. "/lombok.jar"
 local jvm_path = '/Library/Java/JavaVirtualMachines'
 local jdk_21_path = jvm_path .. '/jdk-21.jdk'
@@ -25,6 +25,7 @@ local jdk_17_path= jvm_path .. '/jdk-17.jdk'
 local root_markers = { ".git", "mvnw", "gradlew", "pom.xml", "build.gradle" }
 local root_dir = require("jdtls.setup").find_root(root_markers)
 if root_dir == "" then
+  vim.notify "Root Dir not found."
   return
 end
 
