@@ -40,9 +40,5 @@ vim.keymap.set('n', '<leader>j', '5<C-w>-')
 vim.keymap.set('n', '<leader>k', '5<C-w>+')
 vim.keymap.set('n', '<leader>l', '5<C-w>>')
 
--- normal mode jumping of w and b for space and backspace
-vim.keymap.set('n', '<BS>', 'b')
-vim.keymap.set('v', '<BS>', 'b')
-
 -- Map :W to :w
 vim.cmd("command! W :w")
