@@ -44,6 +44,7 @@ return require('packer').startup(function(use)
     use { 'stevearc/dressing.nvim' }
     -- using web devicons
     use { 'nvim-tree/nvim-web-devicons' }
+    use { "rose-pine/neovim" }
 
     -- EDITOR
     use {
@@ -119,7 +120,10 @@ return require('packer').startup(function(use)
         -- Debugger
         use "mfussenegger/nvim-dap",
         use 'rcarriga/cmp-dap',
-        use "rcarriga/nvim-dap-ui",
+        use {
+		"rcarriga/nvim-dap-ui",
+            requires = { "nvim-neotest/nvim-nio" }
+		},
         use "theHamsta/nvim-dap-virtual-text",
         use "nvim-telescope/telescope-dap.nvim",
         use {
@@ -131,6 +135,6 @@ return require('packer').startup(function(use)
         use 'ThePrimeagen/vim-be-good',
 
         -- leetcode nvim
-        use { 'mbledkowski/neuleetcode.vim' }
+        use { 'mbledkowski/neuleetcode.vim' },
     }
 end)
