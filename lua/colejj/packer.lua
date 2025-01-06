@@ -13,15 +13,9 @@ return require('packer').startup(function(use)
         'junegunn/fzf.vim',
         requires = { { 'junegunn/fzf' } }
     }
-    use {
-        'imNel/monorepo.nvim',
-        -- or                            , branch = '0.1.x',
-        requires = { { 'nvim-lua/plenary.nvim' }, { 'nvim-telescope/telescope.nvim' } }
-    }
     use { "nvim-telescope/telescope.nvim" }
 
     -- TMUX
-    use { 'christoomey/vim-tmux-navigator' }
     use { 'camgraff/telescope-tmux.nvim' }
 
     -- THEMES & APPEARANCE
@@ -61,7 +55,6 @@ return require('packer').startup(function(use)
     -- local branches and changes
     use('mbbill/undotree')
     -- git
-    use('tpope/vim-fugitive')
     use { 'ThePrimeagen/git-worktree.nvim' }
     use { 'kdheepak/lazygit.nvim' }
     -- autopairs
@@ -114,14 +107,14 @@ return require('packer').startup(function(use)
             { 'rafamadriz/friendly-snippets' },                                                    -- useful snippets
         },
 
-        -- java
+        -- JAVA 
         use { 'mfussenegger/nvim-jdtls' },
 
-        -- Debugger
+        -- DEBUGGER
         use "mfussenegger/nvim-dap",
         use 'rcarriga/cmp-dap',
         use {
-		"rcarriga/nvim-dap-ui",
+		    "rcarriga/nvim-dap-ui",
             requires = { "nvim-neotest/nvim-nio" }
 		},
         use "theHamsta/nvim-dap-virtual-text",
@@ -133,8 +126,5 @@ return require('packer').startup(function(use)
 
         -- vim be good
         use 'ThePrimeagen/vim-be-good',
-
-        -- leetcode nvim
-        use { 'mbledkowski/neuleetcode.vim' },
     }
 end)
