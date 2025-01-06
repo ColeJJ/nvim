@@ -9,6 +9,7 @@ return require('packer').startup(function(use)
 
     -- FINDER
     use { 'nvim-telescope/telescope-fzf-native.nvim', run = 'make' }
+    use { 'nvim-lua/plenary.nvim' }
     use {
         'junegunn/fzf.vim',
         requires = { { 'junegunn/fzf' } }
