@@ -1,0 +1,43 @@
+# LazyGit: geänderte Dateien leichter finden als im Modul-Baum.
+# IntelliJ-ähnliche Trennung: flache Liste + Filter (F).
+#
+# F  → Status-Filter
+#      t  nur versionierte (M/A/D) — die eigentliche Arbeit
+#      T  nur Untracked (??) — wie „Unversioned Files“
+#      r  alles
+# `  → Baumansicht an/aus
+
+gui:
+  showFileTree: false
+  nerdFontsVersion: "3"
+  showFileIcons: true
+  theme:
+    # Neovim mappt ANSI-Blau auf #cadee8 — LazyGits Default-Selektion wäre sonst unlesbar.
+    selectedLineBgColor:
+      - "#082C3C"
+    inactiveSelectedLineBgColor:
+      - "#05111D"
+    selectedRangeBgColor:
+      - "#0B364B"
+    defaultFgColor:
+      - "#c9cccd"
+    activeBorderColor:
+      - "#e3d363"
+      - bold
+    inactiveBorderColor:
+      - "#08212F"
+    optionsTextColor:
+      - "#8e97a4"
+    searchingActiveBorderColor:
+      - "#e3d363"
+      - bold
+    unstagedChangesColor:
+      - "#ff4262"
+    cherryPickedCommitFgColor:
+      - "#e3d363"
+    cherryPickedCommitBgColor:
+      - "#0B364B"
+
+keybinding:
+  files:
+    openStatusFilter: F

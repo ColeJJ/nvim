@@ -1,44 +1,156 @@
--- disable nerdtree
-vim.g.loaded_netrw = 1
-vim.g.loaded_netrwPlugin = 1
+-- Fenster
+vim.keymap.set("n", "<leader><Tab>", "<C-w>w", { desc = "Nächstes Fenster" })
+vim.keymap.set("n", "<leader>wh", "<C-w>h", { desc = "Fenster links" })
+vim.keymap.set("n", "<leader>wj", "<C-w>j", { desc = "Fenster unten" })
+vim.keymap.set("n", "<leader>wk", "<C-w>k", { desc = "Fenster oben" })
+vim.keymap.set("n", "<leader>wl", "<C-w>l", { desc = "Fenster rechts" })
 
--- move lines above or down in v mode 
-vim.keymap.set("v", "J", ":m '>+1<CR>gv=gv")
-vim.keymap.set("v", "K", ":m '<-2<CR>gv=gv")
+local function win_has(cmd)
+  local cur = vim.api.nvim_get_current_win()
+  vim.cmd("wincmd " .. cmd)
+  local other = vim.api.nvim_get_current_win()
+  vim.api.nvim_set_current_win(cur)
+  return other ~= cur
+end
 
--- halfway jumping -> change keybindings
+-- Teiler in Pfeilrichtung schieben (nicht nur aktuelles Fenster wachsen).
+local function win_push(dir)
+  if dir == "right" then
+    if win_has("l") then
+      vim.cmd("vertical resize +5")
+    elseif win_has("h") then
+      vim.cmd("vertical resize -5")
+    end
+  elseif dir == "left" then
+    if win_has("h") then
+      vim.cmd("vertical resize +5")
+    elseif win_has("l") then
+      vim.cmd("vertical resize -5")
+    end
+  elseif dir == "up" then
+    if win_has("k") then
+      vim.cmd("resize +3")
+    elseif win_has("j") then
+      vim.cmd("resize -3")
+    end
+  elseif dir == "down" then
+    if win_has("j") then
+      vim.cmd("resize +3")
+    elseif win_has("k") then
+      vim.cmd("resize -3")
+    end
+  end
+end
+
+local function win_key_dir(raw)
+  local key = vim.fn.keytrans(raw)
+  if key == "<Right>" or key == "<kRight>" then
+    return "right"
+  end
+  if key == "<Left>" or key == "<kLeft>" then
+    return "left"
+  end
+  if key == "<Up>" or key == "<kUp>" then
+    return "up"
+  end
+  if key == "<Down>" or key == "<kDown>" then
+    return "down"
+  end
+  if raw == "\27[C" or raw == "\27OC" then
+    return "right"
+  end
+  if raw == "\27[D" or raw == "\27OD" then
+    return "left"
+  end
+  if raw == "\27[A" or raw == "\27OA" then
+    return "up"
+  end
+  if raw == "\27[B" or raw == "\27OB" then
+    return "down"
+  end
+end
+
+local function win_resize_repeat(dir)
+  win_push(dir)
+  vim.api.nvim_echo({ { " Fenstergröße  ←→↑↓  (Esc beendet)", "Question" } }, false, {})
+  vim.cmd("redraw")
+  while true do
+    local ok, raw = pcall(vim.fn.getcharstr)
+    if not ok or not raw or raw == "" then
+      break
+    end
+    local next_dir = win_key_dir(raw)
+    if not next_dir then
+      if vim.fn.keytrans(raw) ~= "<Esc>" then
+        vim.api.nvim_feedkeys(raw, "m", false)
+      end
+      break
+    end
+    win_push(next_dir)
+    vim.cmd("redraw")
+  end
+  vim.api.nvim_echo({}, false, {})
+end
+
+vim.keymap.set("n", "<leader>w<Right>", function()
+  win_resize_repeat("right")
+end, { desc = "Fenster nach rechts schieben" })
+vim.keymap.set("n", "<leader>w<Left>", function()
+  win_resize_repeat("left")
+end, { desc = "Fenster nach links schieben" })
+vim.keymap.set("n", "<leader>w<Up>", function()
+  win_resize_repeat("up")
+end, { desc = "Fenster nach oben schieben" })
+vim.keymap.set("n", "<leader>w<Down>", function()
+  win_resize_repeat("down")
+end, { desc = "Fenster nach unten schieben" })
+
+-- Visuelle Auswahl als Suchtext für / und ?
+local function search_with_selection(prefix)
+  local text = vim.trim(require("colejj.utils").visual_selection():gsub("[\n\r]+", "\\n"))
+  local typed = prefix
+  if text ~= "" then
+    typed = prefix .. vim.fn.escape(text, [=[\/.*$^~[]]=])
+  end
+  vim.api.nvim_feedkeys(
+    vim.api.nvim_replace_termcodes("<Esc>", true, false, true) .. typed,
+    "n",
+    false
+  )
+end
+
+vim.keymap.set("x", "/", function()
+  search_with_selection("/")
+end, { desc = "Suche mit Auswahl" })
+vim.keymap.set("x", "?", function()
+  search_with_selection("?")
+end, { desc = "Rückwärtssuche mit Auswahl" })
+
+vim.keymap.set("n", "<leader>oc", function()
+  require("colejj.docker").open()
+end, { desc = "LazyDocker" })
+vim.api.nvim_create_user_command("LazyDocker", function()
+  require("colejj.docker").open()
+end, { desc = "LazyDocker öffnen" })
+
+-- Bewegung / Yank
+vim.keymap.set("v", "J", ":m '>+1<CR>gv=gv", { desc = "Zeile nach unten" })
+vim.keymap.set("v", "K", ":m '<-2<CR>gv=gv", { desc = "Zeile nach oben" })
 vim.keymap.set("n", "gj", "<C-d>zz")
 vim.keymap.set("n", "gk", "<C-u>zz")
-
--- pasting without loosing the buffer
-vim.keymap.set("x", "<leader>p", "\"_dP")
--- same with deleting
-vim.keymap.set("n", "<leader>d", "\"_d")
-vim.keymap.set("v", "<leader>d", "\"_d")
-
--- copy in vim and past in clipboard
-vim.keymap.set("n", "<leader>y", "\"+y")
-vim.keymap.set("v", "<leader>y", "\"+y")
-vim.keymap.set("n", "<leader>Y", "\"+Y")
-
--- prevent from pressing capital Q
+vim.keymap.set("x", "<leader>p", '"_dP', { desc = "Einfügen ohne Yank zu überschreiben" })
+vim.keymap.set({ "n", "v" }, "<leader>D", '"_d', { desc = "Löschen ohne Yank" })
+vim.keymap.set({ "n", "v" }, "<leader>y", '"+y', { desc = "In System-Clipboard yanken" })
+vim.keymap.set("n", "<leader>Y", '"+Y', { desc = "Zeile in System-Clipboard yanken" })
 vim.keymap.set("n", "Q", "<nop>")
 
--- tmux project switching
-vim.keymap.set('n', '<C-f>', '<cmd>silent !tmux neww ~/.config/tmux/tmux-sessionizer.sh<CR>')
-vim.keymap.set('n', '<C-c>', '<cmd>silent !tmux neww ~/.config/tmux/tmux-cht.sh<CR>')
+-- tmux
+vim.keymap.set("n", "<C-f>", "<cmd>silent !tmux neww ~/.config/tmux/tmux-sessionizer.sh<CR>")
+vim.keymap.set("n", "<C-c>", "<cmd>silent !tmux neww ~/.config/tmux/tmux-cht.sh<CR>")
 
--- replacing the word you are currently on
-vim.keymap.set("n", "<leader>r", [[:%s/\<<C-r><C-w>\>/<C-r><C-w>/gI<Left><Left><Left>]])
+-- Ersetzen bleibt als <leader>R, damit <leader>r für Run frei ist
+vim.keymap.set("n", "<leader>R", [[:%s/\<<C-r><C-w>\>/<C-r><C-w>/gI<Left><Left><Left>]], {
+  desc = "Wort unter Cursor ersetzen",
+})
 
--- WINDOWS
--- change windows 
-vim.keymap.set('n', '<leader><Tab>', '<C-w>w')
--- nvim windwos resizing
-vim.keymap.set('n', '<leader>h', '5<C-w><')
-vim.keymap.set('n', '<leader>j', '5<C-w>-')
-vim.keymap.set('n', '<leader>k', '5<C-w>+')
-vim.keymap.set('n', '<leader>l', '5<C-w>>')
-
--- Map :W to :w
 vim.cmd("command! W :w")

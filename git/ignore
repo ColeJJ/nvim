@@ -1,0 +1,7 @@
+# JDT.LS / Eclipse — lokal, nicht versionieren (wie IntelliJ ignored)
+.factorypath
+.classpath
+.project
+.settings/
+.jdtls-kotlin-output.jar
+.jdtls-enable-apt

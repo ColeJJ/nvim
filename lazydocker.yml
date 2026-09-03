@@ -1,0 +1,18 @@
+# LazyDocker: gleiche Selektion wie LazyGit, damit der markierte Eintrag lesbar bleibt.
+# Neovim mappt ANSI-Blau auf #cadee8 — der Default wäre sonst zu hell.
+
+gui:
+  theme:
+    selectedLineBgColor:
+      - "#082C3C"
+    activeBorderColor:
+      - "#e3d363"
+      - bold
+    inactiveBorderColor:
+      - "#08212F"
+    optionsTextColor:
+      - "#8e97a4"
+
+logs:
+  timestamps: false
+  since: "60m"
