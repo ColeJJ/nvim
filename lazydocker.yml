@@ -16,3 +16,9 @@ gui:
 logs:
   timestamps: false
   since: "60m"
+
+# Nicht `docker compose config --quiet` im CWD: LazyDocker hängt sonst
+# laufende Container nur über den Service-Namen an das lokale Projekt.
+# `dev` und `showroom` heißen beide basis_db / entscheidungen_db.
+commandTemplates:
+  checkDockerComposeConfig: "false"

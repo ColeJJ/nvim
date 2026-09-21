@@ -94,9 +94,10 @@ return {
           width = vim.api.nvim_win_get_width(0) - 4,
         },
         tabline = true,
-        tabline_prefix = "   ",
-        tabline_suffix = "   ",
+        tabline_prefix = " ",
+        tabline_suffix = " ",
       })
+      require("colejj.harpoon_tabline").setup()
       vim.keymap.set("n", "<leader>ha", mark.add_file, { desc = "Harpoon: Datei merken" })
       vim.keymap.set("n", "<leader>he", ui.toggle_quick_menu, { desc = "Harpoon: Menü" })
       for i = 1, 6 do

@@ -85,6 +85,8 @@ function M.settings()
         },
         useBlocks = true,
         hashCodeEquals = { useJava7Objects = true },
+        -- Extract/Create Field+Variable, soweit JDT das selbst setzt.
+        addFinalForNewDeclaration = "all",
       },
     },
   }
@@ -122,9 +124,21 @@ local function patch_jdtls_runtime()
   end
 end
 
+local function existing_jdt_root()
+  for _, client in ipairs(vim.lsp.get_clients({ name = "jdtls" })) do
+    local root = client.config.root_dir
+    if type(root) == "string" and root ~= "" and not project.is_virtual_path(root) then
+      return root
+    end
+  end
+end
+
 local function jdt_root(bufnr)
   local name = vim.api.nvim_buf_get_name(bufnr or 0)
-  local start = name ~= "" and vim.fn.fnamemodify(name, ":p:h") or nil
+  if project.is_virtual_path(name) then
+    return existing_jdt_root() or project.reactor_root(vim.uv.cwd())
+  end
+  local start = name ~= "" and vim.fn.fnamemodify(name, ":p:h") or vim.uv.cwd()
   return project.reactor_root(start)
 end
 
@@ -136,10 +150,22 @@ function M.configure()
   vim.lsp.config("jdtls", {
     root_dir = function(bufnr, on_dir)
       local root = jdt_root(bufnr)
+      if project.is_virtual_path(root) or vim.fn.isdirectory(root or "") ~= 1 then
+        root = existing_jdt_root() or project.reactor_root(vim.uv.cwd())
+      end
       if type(on_dir) == "function" then
         on_dir(root)
       end
       return root
+    end,
+    reuse_client = function(client, config, bufnr)
+      if client.name ~= (config.name or "jdtls") or client:is_stopped() then
+        return false
+      end
+      if client.config.root_dir and config.root_dir and client.config.root_dir == config.root_dir then
+        return true
+      end
+      return project.is_virtual_path(vim.api.nvim_buf_get_name(bufnr or 0))
     end,
     settings = vim.tbl_deep_extend("force", existing.settings or {}, M.settings()),
   })
@@ -149,12 +175,19 @@ local function is_classfile(name)
   return type(name) == "string" and (name:find("^jdt://") ~= nil or name:find("%.class$") ~= nil)
 end
 
+local function is_non_file_virtual_path(name)
+  return type(name) == "string" and project.is_virtual_path(name) and not name:find("^file://")
+end
+
 local function is_project_source(item)
   local name = item.filename or ""
   local loc = item.user_data
   local uri = (loc and (loc.uri or loc.targetUri)) or name
   local haystack = name .. "\n" .. tostring(uri)
   if is_classfile(name) or is_classfile(uri) then
+    return false
+  end
+  if is_non_file_virtual_path(name) or is_non_file_virtual_path(tostring(uri)) then
     return false
   end
   if haystack:find("jdt://", 1, true) or haystack:find("%%3C") or haystack:find("%3C", 1, true) then
@@ -203,11 +236,13 @@ local function fill_classfile(bufnr, uri)
   if not text then
     return
   end
+  vim.bo[bufnr].buftype = "nofile"
   vim.bo[bufnr].modifiable = true
   vim.api.nvim_buf_set_lines(bufnr, 0, -1, true, vim.split(text, "\n", { plain = true }))
   vim.bo[bufnr].filetype = "java"
   vim.bo[bufnr].modifiable = false
   vim.bo[bufnr].swapfile = false
+  vim.bo[bufnr].readonly = true
   if not vim.lsp.buf_is_attached(bufnr, client.id) then
     vim.lsp.buf_attach_client(bufnr, client.id)
   end
@@ -322,7 +357,7 @@ function M.pick_items(items, title)
   local displayer = entry_display.create({
     separator = "  ",
     items = {
-      { width = 36 },
+      { width = 0.5 },
       { remaining = true },
     },
   })
@@ -378,16 +413,95 @@ function M.handle_items(items, title)
   M.pick_items(items, title)
 end
 
+local function reference_items(items)
+  local filtered = {}
+  local seen = {}
+  for _, item in ipairs(M.source_items(items or {})) do
+    if not item_is_here(item) then
+      local key = table.concat({ item.filename or "", item.lnum or 0, item.col or 0 }, ":")
+      if not seen[key] then
+        seen[key] = true
+        filtered[#filtered + 1] = item
+      end
+    end
+  end
+  return filtered
+end
+
+local function references_of_super_method(done)
+  local bufnr = vim.api.nvim_get_current_buf()
+  local client = vim.lsp.get_clients({ bufnr = bufnr, name = "jdtls" })[1]
+  if not client then
+    done({})
+    return
+  end
+
+  local position = vim.lsp.util.make_position_params(0, client.offset_encoding)
+  local requested = client:request("java/findLinks", {
+    type = "superImplementation",
+    position = position,
+  }, function(err, links)
+    if err or type(links) ~= "table" or #links == 0 then
+      done({})
+      return
+    end
+
+    local locations = {}
+    local pending = #links
+    local finished = false
+    local function complete()
+      pending = pending - 1
+      if pending > 0 or finished then
+        return
+      end
+      finished = true
+      local items = vim.lsp.util.locations_to_items(locations, client.offset_encoding)
+      done(reference_items(items))
+    end
+
+    for _, link in ipairs(links) do
+      local uri = link.uri or link.targetUri
+      local range = link.range or link.targetSelectionRange
+      if not uri or not range then
+        complete()
+      else
+        local ok = client:request("textDocument/references", {
+          textDocument = { uri = uri },
+          position = range.start,
+          context = { includeDeclaration = false },
+        }, function(ref_err, refs)
+          if not ref_err and type(refs) == "table" then
+            vim.list_extend(locations, refs)
+          end
+          complete()
+        end, bufnr)
+        if not ok then
+          complete()
+        end
+      end
+    end
+  end, bufnr)
+
+  if not requested then
+    done({})
+  end
+end
+
 function M.references_smart()
   vim.lsp.buf.references({ includeDeclaration = false }, {
     on_list = function(options)
-      local items = {}
-      for _, item in ipairs(M.source_items(options.items or {})) do
-        if not item_is_here(item) then
-          items[#items + 1] = item
-        end
+      local items = reference_items(options.items)
+      if #items > 0 or vim.bo.filetype ~= "java" then
+        M.handle_items(items, "Referenzen")
+        return
       end
-      M.handle_items(items, "Referenzen")
+
+      -- Ein Aufruf über einen Interface-Typ referenziert in JDT die
+      -- Interface-Methode, nicht deren @Override-Implementierung. Suche in
+      -- diesem Fall die Super-Methode und deren Referenzen.
+      references_of_super_method(function(super_items)
+        M.handle_items(super_items, "Referenzen")
+      end)
     end,
   })
 end
@@ -485,10 +599,76 @@ function M.execute(command, arguments)
 end
 
 function M.update_project()
-  local buf = vim.uri_from_bufnr(0)
-  M.execute("java.projectConfiguration.update", { buf })
-  require("colejj.java.classpath").schedule_repair(12)
+  local client = M.client()
+  if not client then
+    vim.notify("JDT.LS ist nicht aktiv. Eine Java-Datei öffnen.", vim.log.levels.WARN, { title = "colejj.java" })
+    return
+  end
+
+  local function schedule_repair()
+    require("colejj.java.classpath").schedule_repair(12)
+  end
+
+  local function update_all(projects)
+    if type(projects) == "table" and #projects > 0 then
+      local identifiers = {}
+      for _, project_uri in ipairs(projects) do
+        identifiers[#identifiers + 1] = { uri = project_uri }
+      end
+      client:notify("java/projectConfigurationsUpdate", { identifiers = identifiers })
+    else
+      -- vscode-java-Command java.projectConfiguration.update gibt es serverseitig
+      -- nicht. JDT.LS erwartet die eigene Methode java/projectConfigurationUpdate.
+      client:request("java/projectConfigurationUpdate", {
+        uri = vim.uri_from_bufnr(0),
+      }, function(err)
+        if err then
+          vim.notify(err.message or vim.inspect(err), vim.log.levels.ERROR, { title = "colejj.java" })
+        end
+      end)
+    end
+    schedule_repair()
+  end
+
+  local function refresh_configs()
+    client:request("workspace/executeCommand", {
+      command = "java.project.getAll",
+      arguments = {},
+    }, function(err, projects)
+      if err then
+        update_all(nil)
+        return
+      end
+      update_all(projects)
+    end)
+  end
+
+  local workspace = {}
+  for _, folder in ipairs(client.workspace_folders or {}) do
+    if folder.uri then
+      workspace[#workspace + 1] = folder.uri
+    end
+  end
+  if #workspace == 0 and client.root_dir then
+    workspace[1] = vim.uri_from_fname(client.root_dir)
+  end
+
+  if #workspace > 0 then
+    client:request("workspace/executeCommand", {
+      command = "java.project.import",
+      arguments = workspace,
+    }, function()
+      refresh_configs()
+    end)
+  else
+    refresh_configs()
+  end
+
   vim.notify("Maven-/Gradle-Projekt wird neu importiert", vim.log.levels.INFO, { title = "colejj.java" })
+end
+
+function M.rename()
+  require("colejj.java.rename").rename()
 end
 
 function M.organize_imports()
@@ -530,21 +710,61 @@ function M.health()
   vim.notify(table.concat(lines, "\n"), vim.log.levels.INFO, { title = "colejj.java" })
 end
 
+local notify_restore
+local function quiet_sigterm(ms)
+  if notify_restore then
+    return
+  end
+  local original = vim.notify
+  notify_restore = original
+  vim.notify = function(msg, level, opts)
+    if type(msg) == "string" and msg:find("Client jdtls quit with exit code 143", 1, true) then
+      return
+    end
+    return original(msg, level, opts)
+  end
+  vim.defer_fn(function()
+    if vim.notify ~= original and notify_restore == original then
+      vim.notify = original
+    end
+    notify_restore = nil
+  end, ms or 8000)
+end
+
+local function reattach()
+  vim.lsp.enable("jdtls")
+end
+
+function M.restart()
+  local client = M.client()
+  if not client then
+    vim.notify("JDT.LS ist nicht aktiv — starte …", vim.log.levels.INFO, { title = "colejj.java" })
+    reattach()
+    return
+  end
+  -- Sauberes shutdown/exit; nach 5s Force-Stop, falls der Server hängt.
+  -- Exit 143 (SIGTERM) ist dann erwartet und keine echte Störung.
+  quiet_sigterm(8000)
+  vim.notify("JDT.LS wird neu gestartet …", vim.log.levels.INFO, { title = "colejj.java" })
+  client:_restart(5000)
+end
+
 function M.reset_workspace()
   local client = M.client()
   local root = (client and client.config.root_dir) or project.project_root()
   local workspace = project.jdtls_workspace(root)
+  quiet_sigterm(8000)
   if client then
-    client:stop(true)
-  end
-  if vim.fn.isdirectory(workspace) == 1 then
-    local backup = workspace .. "-backup-" .. os.date("%Y%m%d-%H%M%S")
-    vim.fn.rename(workspace, backup)
-    vim.notify("Workspace gesichert nach " .. backup, vim.log.levels.INFO, { title = "colejj.java" })
+    client:stop(5000)
   end
   vim.defer_fn(function()
-    vim.cmd.edit()
-  end, 500)
+    if vim.fn.isdirectory(workspace) == 1 then
+      local backup = workspace .. "-backup-" .. os.date("%Y%m%d-%H%M%S")
+      vim.fn.rename(workspace, backup)
+      vim.notify("Workspace gesichert nach " .. backup, vim.log.levels.INFO, { title = "colejj.java" })
+    end
+    reattach()
+  end, client and 800 or 100)
 end
 
 return M

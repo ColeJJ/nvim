@@ -40,6 +40,7 @@ local function parse_application(xml)
     vmargs = opts.VM_PARAMETERS,
     args = opts.PROGRAM_PARAMETERS,
     wd = opts.WORKING_DIRECTORY,
+    include_provided = opts.INCLUDE_PROVIDED_SCOPE ~= "false",
     envs = envs,
   }
 end
@@ -67,13 +68,29 @@ function M.list()
   return configs
 end
 
-function M.expand_wd(cfg)
-  if not cfg.wd or cfg.wd == "" then
-    return project.idea_root()
+function M.module_dir(cfg)
+  local root = vim.fn.fnamemodify(project.reactor_root(), ":p"):gsub("/$", "")
+  local module = cfg and cfg.module
+  if type(module) == "string" and module ~= "" and module ~= "." then
+    local dir = root .. "/" .. module
+    if vim.uv.fs_stat(dir .. "/pom.xml") then
+      return vim.fn.fnamemodify(dir, ":p"):gsub("/$", "")
+    end
   end
+end
+
+function M.expand_wd(cfg)
   local root = vim.fn.fnamemodify(project.idea_root(), ":p"):gsub("/$", "")
-  local wd = cfg.wd:gsub("%$PROJECT_DIR%$", root)
-  return vim.fn.expand(wd)
+  local wd = cfg and cfg.wd
+  if type(wd) == "string" and wd ~= "" then
+    wd = wd:gsub("^file://", "")
+    wd = wd:gsub("%$PROJECT_DIR%$", root)
+    wd = vim.fn.fnamemodify(vim.fn.expand(wd), ":p"):gsub("/$", "")
+    if vim.fn.isdirectory(wd) == 1 then
+      return wd
+    end
+  end
+  return M.module_dir(cfg) or root
 end
 
 function M.pick(callback)

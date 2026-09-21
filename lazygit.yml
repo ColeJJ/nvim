@@ -1,14 +1,23 @@
-# LazyGit: geänderte Dateien leichter finden als im Modul-Baum.
-# IntelliJ-ähnliche Trennung: flache Liste + Filter (F).
+# LazyGit: geänderte Dateien leichter finden.
+#
+# Lange Java-Pfade schneidet LazyGit rechts ab; eine reine Dateinamen-Liste
+# gibt es nicht. Deshalb Baumansicht (Dateiname als Blatt) und eine breitere
+# linke Spalte.
 #
 # F  → Status-Filter
-#      t  nur versionierte (M/A/D) — die eigentliche Arbeit
-#      T  nur Untracked (??) — wie „Unversioned Files“
+#      t  nur versionierte (M/A/D)
+#      T  nur Untracked (??)
 #      r  alles
-# `  → Baumansicht an/aus
+# `  → volle Pfade als flache Liste
+# +  → Files-Fenster weiter vergrößern, _ zurück
+# e  → im Diff Datei an der aktuellen Zeile im laufenden Neovim öffnen
+
+os:
+  editPreset: nvim-remote
 
 gui:
-  showFileTree: false
+  showFileTree: true
+  sidePanelWidth: 0.52
   nerdFontsVersion: "3"
   showFileIcons: true
   theme:

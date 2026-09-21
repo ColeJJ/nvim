@@ -466,6 +466,145 @@ local function schedule(bufnr)
   end)
 end
 
+-- JDT erzeugt Konstruktor-/Methodenparameter ohne `final`. Vor dem
+-- Anwenden eines Workspace-Edits (Code Action, Generate Constructor, …)
+-- hängen wir `final` an typisierte Parameter, die es noch nicht haben.
+local WRAP_PREFIX = "class __ColejjGen {\n"
+local WRAP_SUFFIX = "\n}\n"
+
+local PARAM_NODE = {
+  formal_parameter = true,
+  spread_parameter = true,
+  catch_formal_parameter = true,
+}
+
+local function source_has_final(node, src)
+  local mods = child_of_type(node, "modifiers")
+  if not mods then
+    return false
+  end
+  local ok, value = pcall(vim.treesitter.get_node_text, mods, src)
+  return ok and value:find("%f[%w_]final%f[^%w_]") ~= nil
+end
+
+local TYPE_CHILD = {
+  type_identifier = true,
+  scoped_type_identifier = true,
+  generic_type = true,
+  array_type = true,
+  integral_type = true,
+  floating_point_type = true,
+  boolean_type = true,
+  void_type = true,
+  annotated_type = true,
+}
+
+local function param_typed(node)
+  if field1(node, "type") then
+    return true
+  end
+  for child in node:iter_children() do
+    if TYPE_CHILD[child:type()] then
+      return true
+    end
+  end
+  return node:type() == "spread_parameter"
+end
+
+function M.with_final_params(text)
+  if type(text) ~= "string" or text == "" or not text:find("(", 1, true) then
+    return text
+  end
+  if #text > 80000 or text:match("^%s*package%s+") then
+    return text
+  end
+  local wrapped = WRAP_PREFIX .. text .. WRAP_SUFFIX
+  local ok_parser, parser = pcall(vim.treesitter.get_string_parser, wrapped, "java")
+  if not ok_parser or not parser then
+    return text
+  end
+  local trees = parser:parse()
+  local tree = trees and trees[1]
+  if not tree then
+    return text
+  end
+  local inserts = {}
+  local function visit(node)
+    if PARAM_NODE[node:type()] and param_typed(node) and not source_has_final(node, wrapped) and not is_record_component(node) then
+      local _, _, byte = node:start()
+      inserts[#inserts + 1] = byte
+    end
+    for child in node:iter_children() do
+      visit(child)
+    end
+  end
+  visit(tree:root())
+  if #inserts == 0 then
+    return text
+  end
+  table.sort(inserts, function(a, b)
+    return a > b
+  end)
+  local out = wrapped
+  local seen = {}
+  for _, byte in ipairs(inserts) do
+    if not seen[byte] then
+      seen[byte] = true
+      out = out:sub(1, byte) .. "final " .. out:sub(byte + 1)
+    end
+  end
+  return out:sub(#WRAP_PREFIX + 1, #out - #WRAP_SUFFIX)
+end
+
+local function patch_text_edits(edits)
+  if type(edits) ~= "table" then
+    return
+  end
+  for _, item in ipairs(edits) do
+    if type(item) == "table" and type(item.newText) == "string" then
+      item.newText = M.with_final_params(item.newText)
+    end
+  end
+end
+
+local function is_java_uri(uri)
+  return type(uri) == "string" and uri:find("%.java", 1, true) ~= nil
+end
+
+function M.patch_workspace_edit(edit)
+  if type(edit) ~= "table" then
+    return edit
+  end
+  if edit.changes then
+    for uri, edits in pairs(edit.changes) do
+      if is_java_uri(uri) then
+        patch_text_edits(edits)
+      end
+    end
+  end
+  if edit.documentChanges then
+    for _, change in ipairs(edit.documentChanges) do
+      local uri = type(change) == "table" and change.textDocument and change.textDocument.uri
+      if is_java_uri(uri) then
+        patch_text_edits(change.edits)
+      end
+    end
+  end
+  return edit
+end
+
+local function hook_workspace_edits()
+  if vim.lsp.util._colejj_final_params then
+    return
+  end
+  local orig = vim.lsp.util.apply_workspace_edit
+  vim.lsp.util.apply_workspace_edit = function(edit, offset_encoding)
+    M.patch_workspace_edit(edit)
+    return orig(edit, offset_encoding)
+  end
+  vim.lsp.util._colejj_final_params = true
+end
+
 function M.toggle()
   M.enabled = not M.enabled
   for _, buf in ipairs(vim.api.nvim_list_bufs()) do
@@ -477,6 +616,7 @@ function M.toggle()
 end
 
 function M.setup()
+  hook_workspace_edits()
   vim.api.nvim_create_user_command("JavaToggleFinalWarnings", M.toggle, {
     desc = "final-Warnungen an/aus",
   })

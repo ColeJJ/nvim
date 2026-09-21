@@ -19,6 +19,8 @@ return {
       telescope.setup({
         defaults = {
           file_ignore_patterns = { ".git/", "node_modules/", "dist/", "/bin/", "target/" },
+          path_display = { "filename_first" },
+          sorting_strategy = "ascending",
           layout_strategy = "vertical",
           layout_config = {
             vertical = {
@@ -43,21 +45,28 @@ return {
       pcall(telescope.load_extension, "dap")
 
       local ns = { noremap = true, silent = true }
-      vim.keymap.set("n", "<leader>ff", function()
+      local function find_project_files()
         local cwd = require("colejj.project").git_root() or require("colejj.project").reactor_root()
         builtin.find_files({
           cwd = cwd,
           hidden = true,
           file_ignore_patterns = { ".git/", "node_modules/", "dist/", "/bin/", "target/", ".m2/" },
         })
-      end, vim.tbl_extend("force", ns, { desc = "Dateien im Projekt" }))
+      end
+      vim.keymap.set("n", "<leader>ff", find_project_files, vim.tbl_extend("force", ns, { desc = "Dateien im Projekt" }))
+      vim.keymap.set("n", "<leader><leader>", find_project_files, vim.tbl_extend("force", ns, { desc = "Dateien im Projekt" }))
       vim.keymap.set("n", "<leader>fF", function()
         require("colejj.java.commands").goto_class_anywhere()
       end, vim.tbl_extend("force", ns, { desc = "Klasse inkl. Dependencies" }))
       vim.keymap.set("n", "<leader>fc", builtin.git_commits, { desc = "Git-Commits" })
       vim.keymap.set("n", "<leader>fw", builtin.grep_string, { desc = "Wort unter Cursor" })
-      vim.keymap.set("n", "<leader>fd", builtin.diagnostics, { desc = "Diagnosen" })
-      vim.keymap.set("n", "<leader>fo", builtin.oldfiles, { desc = "Zuletzt geöffnet" })
+      vim.keymap.set("n", "<leader>fx", builtin.diagnostics, { desc = "Diagnosen" })
+      vim.keymap.set("n", "<leader>fo", function()
+        require("colejj.find").oldfiles()
+      end, { desc = "Zuletzt geöffnet" })
+      vim.keymap.set("n", "<leader>fu", function()
+        require("colejj.find").unsaved_in_project()
+      end, { desc = "Ungespeicherte Dateien" })
       local function buffer_list()
         builtin.buffers({
           prompt_title = "Buffer  ·  d/x/<C-d> schließen",
@@ -77,18 +86,10 @@ return {
       vim.keymap.set("n", "<leader>fb", buffer_list, { desc = "Buffer-Liste" })
       vim.keymap.set("n", "<leader>bl", buffer_list, { desc = "Buffer-Liste" })
       vim.keymap.set({ "n", "x" }, "<leader>gr", function()
-        builtin.live_grep({
-          default_text = require("colejj.utils").visual_search_text(),
-        })
+        require("colejj.find").search_project()
       end, { desc = "Projekt durchsuchen" })
       local function search_buffer()
-        local default
-        if vim.fn.mode():find("[vV\22]") then
-          default = vim.trim(require("colejj.utils").visual_selection())
-        end
-        builtin.current_buffer_fuzzy_find({
-          default_text = (default and default ~= "") and default or nil,
-        })
+        require("colejj.find").search_buffer()
       end
       vim.keymap.set({ "n", "x" }, "<leader>/", search_buffer, { desc = "Im Buffer suchen" })
       vim.keymap.set("n", "<leader>?", builtin.help_tags, { desc = "Hilfe" })
@@ -108,7 +109,7 @@ return {
       vim.keymap.set({ "n", "x" }, "<leader>ss", search_buffer, { desc = "Suche im Buffer" })
       vim.keymap.set({ "n", "x" }, "<leader>sb", search_buffer, { desc = "Suche im Buffer" })
       vim.keymap.set("n", "<leader>sS", function()
-        builtin.current_buffer_fuzzy_find({ default_text = vim.fn.expand("<cword>") })
+        require("colejj.find").search_buffer({ default_text = vim.fn.expand("<cword>") })
       end, { desc = "Buffer: Wort unter Cursor" })
       vim.keymap.set("n", "<leader>sw", function()
         local word = vim.fn.expand("<cword>")
@@ -135,8 +136,8 @@ return {
         require("colejj.find").search_project()
       end, { desc = "Suche im Projekt" })
       vim.keymap.set("n", "<leader>sF", function()
-        require("colejj.find").search_project_literal()
-      end, { desc = "Suche literal" })
+        require("colejj.find").search_project_regex()
+      end, { desc = "Suche Regex" })
       vim.keymap.set("n", "<leader>sP", function()
         require("colejj.find").search_project_latin1()
       end, { desc = "Suche Latin-1" })

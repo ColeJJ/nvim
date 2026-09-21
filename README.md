@@ -56,6 +56,11 @@ gesucht wird Git-Root bzw. das **oberste** `pom.xml` (Reactor).
 
 Leader ist `Space`.
 
+| Taste | Aktion |
+| --- | --- |
+| `<leader>fs` / `⌘S` | Datei speichern (`:w`) |
+| `<leader>C` | Cursor: Insert schmal ↔ Block mit Farbwechsel |
+
 ### Navigation / LSP
 
 | Taste | Aktion |
@@ -112,11 +117,17 @@ Leader ist `Space`.
 | Taste | Aktion |
 | --- | --- |
 | `rtt` | Test unter Cursor |
-| `rta` | Suite / Datei |
+| `rta` | alle Tests der aktuellen Klasse |
 | `rtd` / `rtD` | Debug (Methode / Datei) |
 | `rtl` | letzten Test wiederholen |
 | `rto` / `rts` | Output / Übersicht |
 | `rtS` | Tests stoppen |
+
+Der Klassenlauf nutzt einen gecachten Maven-Test-Classpath und den direkten
+JUnit-Console-Runner. Vollständige XML-Reports beenden die Anzeige zuverlässig;
+nach 120 Sekunden wird ein tatsächlich hängender Lauf abgebrochen.
+Fehlgeschlagene Tests zeigen Erwartung, Ist-Wert und relevante Stackframes
+direkt an; `e` auf einem Fehler öffnet den vollständigen Fehler in einem großen Fenster.
 
 ### Debug (`<leader>d`)
 
@@ -144,6 +155,7 @@ Pfeiltasten nach `SPC w` schieben die Größe.
 
 | Taste | Aktion |
 | --- | --- |
+| `ob` | aktuelle Datei im Standard-Browser öffnen (wie Doom `SPC o b`) |
 | `oc` | LazyDocker: Container, Compose, Logs (wie LazyGit, Theme in `lazydocker.yml`) |
 | `od` | DB-Viewer: Verbindungen, Schemas, Tabellen und paginierte Daten |
 
@@ -165,7 +177,7 @@ Postgres-Viewer über DBee; SQL-Dateien über Dadbod. Details:
 | --- | --- |
 | `gg` / `gs` | LazyGit / aktuelle Datei |
 | `gb` | Inline-Blame |
-| `gd` / `gD` | Diffview HEAD / Basis-Branch |
+| `gd` / `gD` | Datei-Diff vs HEAD / vs Abzweigpunkt (readonly, `e` sprung, `d` verwerfen) |
 | `gh` | Datei-Historie |
 | `gc` | Merge-Konflikte |
 

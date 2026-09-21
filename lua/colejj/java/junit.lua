@@ -8,6 +8,7 @@ local jdk = require("colejj.java.jdk")
 local M = {}
 
 local cp_cache = {}
+local CP_CACHE_NAME = ".colejj-test-classpath"
 
 local function java_bin()
   local home = jdk.jdtls_home() or os.getenv("JAVA_HOME")
@@ -129,11 +130,30 @@ local function read_deps(file)
     return {}
   end
   local raw = table.concat(vim.fn.readfile(file), ""):gsub("%s+$", "")
-  pcall(vim.fn.delete, file)
   if raw == "" then
     return {}
   end
   return vim.split(raw, ":", { plain = true, trimempty = true })
+end
+
+local function classpath_file(target)
+  return (target.module_dir or target.root) .. "/target/" .. CP_CACHE_NAME
+end
+
+local function classpath_cache_fresh(target, file)
+  local cached = vim.uv.fs_stat(file)
+  if not cached then
+    return false
+  end
+  for _, pom in ipairs(vim.fs.find("pom.xml", { path = target.root, type = "file", limit = 80 })) do
+    if not pom:find("/target/", 1, true) then
+      local stat = vim.uv.fs_stat(pom)
+      if stat and stat.mtime.sec > cached.mtime.sec then
+        return false
+      end
+    end
+  end
+  return true
 end
 
 local function classpath_cmd(target, offline)
@@ -157,8 +177,19 @@ function M.ensure_classpath(target, cb, track)
     cb(cp_cache[key])
     return
   end
+  local cached_file = classpath_file(target)
+  if classpath_cache_fresh(target, cached_file) then
+    local cached = assemble(target, read_deps(cached_file))
+    if cached then
+      cp_cache[key] = cached
+      cb(cached)
+      return
+    end
+  end
   local function resolve(offline, after)
-    local out = vim.fn.tempname()
+    local out = cached_file
+    vim.fn.mkdir(vim.fn.fnamemodify(out, ":h"), "p")
+    pcall(vim.fn.delete, out)
     local cmd = classpath_cmd(target, offline)
     vim.list_extend(cmd, {
       "-Dmdep.outputFile=" .. out,
@@ -205,14 +236,23 @@ function M.run_cmd(target, classpath)
     return nil
   end
   local reports = target.reports_dir
-  local cmd = { java_bin(), "-jar", jar }
+  local cmd = {
+    java_bin(),
+    "-Xmx1024m",
+    "-Duser.language=de",
+    "-Duser.region=DE",
+    "-Duser.dir=" .. (target.module_dir or target.root),
+    "-jar",
+    jar,
+  }
   if modern_cli(jar) then
     vim.list_extend(cmd, {
       "execute",
       "--disable-banner",
       "--disable-ansi-colors",
-      "--details=tree",
+      "--details=summary",
       "--class-path=" .. cp,
+      "--exclude-engine=archunit",
     })
     if reports then
       cmd[#cmd + 1] = "--reports-dir=" .. reports
@@ -225,7 +265,14 @@ function M.run_cmd(target, classpath)
       cmd[#cmd + 1] = "--scan-class-path=" .. (target.module_dir or target.root) .. "/target/test-classes"
     end
   else
-    vim.list_extend(cmd, { "-cp", cp, "--disable-banner", "--disable-ansi-colors", "--details=tree" })
+    vim.list_extend(cmd, {
+      "-cp",
+      cp,
+      "--disable-banner",
+      "--disable-ansi-colors",
+      "--details=summary",
+      "--exclude-engine=archunit",
+    })
     if reports then
       cmd[#cmd + 1] = "--reports-dir=" .. reports
     end

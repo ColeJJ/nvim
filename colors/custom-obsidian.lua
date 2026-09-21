@@ -67,7 +67,10 @@ hi("NormalNC", { fg = c.fg, bg = c.bg })
 hi("NormalFloat", { fg = c.fg, bg = c.bg_line })
 hi("FloatBorder", { fg = c.border, bg = c.bg_line })
 hi("FloatTitle", { fg = c.keyword, bg = c.bg_line, bold = true })
-hi("Cursor", { fg = c.bg, bg = c.fg_bright })
+hi("Cursor", { fg = c.bg, bg = "#A0A0A0" })
+hi("iCursor", { fg = c.bg, bg = "#FFFFFF" })
+hi("vCursor", { fg = c.bg, bg = "#FFFFFF" })
+hi("lCursor", { fg = c.bg, bg = "#FFFFFF" })
 hi("CursorLine", { bg = c.bg_line })
 hi("CursorColumn", { bg = c.bg_line })
 hi("ColorColumn", { bg = c.indent })
@@ -370,7 +373,7 @@ hi("DapLogPoint", { fg = c.func_call, bg = c.bg })
 hi("DapStopped", { fg = c.string, bg = c.bg_line })
 
 -- Terminal
-hi("TermCursor", { fg = c.bg, bg = c.fg_bright })
+hi("TermCursor", { fg = c.bg, bg = "#A0A0A0" })
 vim.g.terminal_color_0 = c.bg_line
 vim.g.terminal_color_1 = c.red
 vim.g.terminal_color_2 = c.string

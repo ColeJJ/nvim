@@ -19,7 +19,41 @@ local function package_from_path(path)
   return rel:gsub("/", "."):gsub("%.[^%.]+$", "")
 end
 
+local function nvim_tree_dir()
+  if vim.bo.filetype ~= "NvimTree" then
+    return nil
+  end
+  local ok, api = pcall(require, "nvim-tree.api")
+  if not ok then
+    return nil
+  end
+  local node = api.tree.get_node_under_cursor()
+  if not node or not node.absolute_path then
+    return nil
+  end
+  if node.type == "directory" or vim.fn.isdirectory(node.absolute_path) == 1 then
+    return node.absolute_path
+  end
+  return vim.fn.fnamemodify(node.absolute_path, ":h")
+end
+
+local function oil_dir()
+  if vim.bo.filetype ~= "oil" then
+    return nil
+  end
+  local ok, oil = pcall(require, "oil")
+  if not ok then
+    return nil
+  end
+  return oil.get_current_dir()
+end
+
+local function target_dir()
+  return nvim_tree_dir() or oil_dir() or vim.fn.expand("%:p:h")
+end
+
 function M.new_type()
+  local base = target_dir()
   vim.ui.select({ "class", "interface", "enum", "record", "annotation" }, { prompt = "Neuer Typ" }, function(kind)
     if not kind then
       return
@@ -28,7 +62,7 @@ function M.new_type()
       if not name or name == "" then
         return
       end
-      local dir = vim.fn.expand("%:p:h")
+      local dir = base
       local simple = name
       if name:find("%.") then
         local pkg = name:match("(.+)%.[^%.]+$")

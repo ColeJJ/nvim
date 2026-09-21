@@ -1,9 +1,16 @@
+-- Speichern (Doom `SPC f s`, macOS ⌘S)
+vim.keymap.set({ "n", "v" }, "<leader>fs", "<cmd>write<CR>", { desc = "Datei speichern" })
+vim.keymap.set({ "n", "i", "v", "s" }, "<D-s>", "<cmd>write<CR>", { desc = "Datei speichern" })
+
 -- Fenster
 vim.keymap.set("n", "<leader><Tab>", "<C-w>w", { desc = "Nächstes Fenster" })
 vim.keymap.set("n", "<leader>wh", "<C-w>h", { desc = "Fenster links" })
 vim.keymap.set("n", "<leader>wj", "<C-w>j", { desc = "Fenster unten" })
 vim.keymap.set("n", "<leader>wk", "<C-w>k", { desc = "Fenster oben" })
 vim.keymap.set("n", "<leader>wl", "<C-w>l", { desc = "Fenster rechts" })
+vim.keymap.set("n", "<leader>wq", "<C-w>q", { desc = "Fenster schließen" })
+vim.keymap.set("n", "<leader>wv", "<C-w>v", { desc = "Fenster vertikal splitten" })
+vim.keymap.set("n", "<leader>wV", "<C-w>s", { desc = "Fenster horizontal splitten" })
 
 local function win_has(cmd)
   local cur = vim.api.nvim_get_current_win()
@@ -128,7 +135,21 @@ end, { desc = "Rückwärtssuche mit Auswahl" })
 
 vim.keymap.set("n", "<leader>oc", function()
   require("colejj.docker").open()
-end, { desc = "LazyDocker" })
+end, { desc = "Docker Compose / LazyDocker" })
+vim.keymap.set("n", "<leader>ob", function()
+  local name = vim.api.nvim_buf_get_name(0)
+  if name == "" or vim.bo.buftype ~= "" then
+    vim.notify("Kein Dateipuffer", vim.log.levels.WARN)
+    return
+  end
+  if vim.bo.modified then
+    pcall(vim.cmd.write)
+  end
+  local ok, err = vim.ui.open(name)
+  if not ok then
+    vim.notify(tostring(err or "Öffnen fehlgeschlagen"), vim.log.levels.ERROR)
+  end
+end, { desc = "Im Standard-Browser öffnen" })
 vim.api.nvim_create_user_command("LazyDocker", function()
   require("colejj.docker").open()
 end, { desc = "LazyDocker öffnen" })
@@ -152,5 +173,23 @@ vim.keymap.set("n", "<C-c>", "<cmd>silent !tmux neww ~/.config/tmux/tmux-cht.sh<
 vim.keymap.set("n", "<leader>R", [[:%s/\<<C-r><C-w>\>/<C-r><C-w>/gI<Left><Left><Left>]], {
   desc = "Wort unter Cursor ersetzen",
 })
+vim.keymap.set("x", "<leader>R", function()
+  local text = vim.trim(require("colejj.utils").visual_selection():gsub("\n", "\\n"))
+  if text == "" then
+    return
+  end
+  local escaped = vim.fn.escape(text, [[/\.*$^~[]])
+  vim.api.nvim_feedkeys(
+    vim.api.nvim_replace_termcodes("<Esc>", true, false, true)
+      .. ":%s/"
+      .. escaped
+      .. "/"
+      .. escaped
+      .. "/gI"
+      .. vim.api.nvim_replace_termcodes("<Left><Left><Left>", true, false, true),
+    "n",
+    false
+  )
+end, { desc = "Auswahl ersetzen" })
 
 vim.cmd("command! W :w")

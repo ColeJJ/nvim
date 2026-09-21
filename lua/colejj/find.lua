@@ -154,7 +154,7 @@ local function pick_methods(entries, title)
   local displayer = entry_display.create({
     separator = "  ",
     items = {
-      { width = 36 },
+      { width = 0.55 },
       { remaining = true },
     },
   })
@@ -199,6 +199,21 @@ local function live_grep(opts)
   opts = opts or {}
   opts.cwd = opts.cwd or require("colejj.project").project_root()
   opts.default_text = opts.default_text or require("colejj.utils").visual_search_text()
+  -- IntelliJ-artig: `(`, `.`, `*` sind Text, keine Regex. `opts.regex = true` hebt das auf.
+  if opts.regex then
+    opts.regex = nil
+  else
+    local extra = opts.additional_args
+    opts.additional_args = function(...)
+      local args = { "-F" }
+      if type(extra) == "function" then
+        vim.list_extend(args, extra(...) or {})
+      elseif type(extra) == "table" then
+        vim.list_extend(args, extra)
+      end
+      return args
+    end
+  end
   require("telescope.builtin").live_grep(opts)
 end
 
@@ -206,13 +221,15 @@ function M.search_project()
   live_grep({ prompt_title = "Suche im Projekt" })
 end
 
-function M.search_project_literal()
+function M.search_project_regex()
   live_grep({
-    prompt_title = "Suche literal",
-    additional_args = function()
-      return { "-F" }
-    end,
+    prompt_title = "Suche Regex",
+    regex = true,
   })
+end
+
+function M.search_project_literal()
+  live_grep({ prompt_title = "Suche literal" })
 end
 
 function M.search_project_latin1()
@@ -259,6 +276,263 @@ function M.search_buffers()
     grep_open_files = true,
     prompt_title = "Suche in offenen Buffern",
   })
+end
+
+--- Buffer-Suche in Dateireihenfolge (nicht nach Fuzzy-Score).
+function M.search_buffer(opts)
+  opts = opts or {}
+  local default = opts.default_text
+  if default == nil then
+    default = require("colejj.utils").visual_search_text()
+  end
+  if default == "" then
+    default = nil
+  end
+  local sorters = require("telescope.sorters")
+  require("telescope.builtin").current_buffer_fuzzy_find({
+    prompt_title = "Suche im Buffer",
+    default_text = default,
+    sorter = sorters.Sorter:new({
+      scoring_function = function(_, prompt, line, entry)
+        if prompt and prompt ~= "" then
+          if not (line or ""):lower():find(prompt:lower(), 1, true) then
+            return -1
+          end
+        end
+        return (entry and entry.lnum) or 1
+      end,
+      highlighter = function(_, prompt, display)
+        if not prompt or prompt == "" then
+          return {}
+        end
+        local start = (display or ""):lower():find(prompt:lower(), 1, true)
+        if not start then
+          return {}
+        end
+        return { { start = start, finish = start + #prompt - 1 } }
+      end,
+    }),
+  })
+end
+
+function M.open_dired(path)
+  require("oil").open(path)
+end
+
+--- Wie Doom `SPC f d` / projectile-find-dir: Verzeichnis im Projekt wählen, dann Oil.
+function M.unsaved_in_project()
+  local root = vim.fn.fnamemodify(require("colejj.project").project_root(), ":p")
+  local items = {}
+  for _, info in ipairs(vim.fn.getbufinfo({ bufmodified = 1, buflisted = 1 })) do
+    local path = info.name
+    if path ~= "" then
+      path = vim.fn.fnamemodify(path, ":p")
+      if vim.startswith(path, root) then
+        items[#items + 1] = {
+          bufnr = info.bufnr,
+          path = path,
+          rel = path:sub(#root + 1),
+          lastused = info.lastused or 0,
+        }
+      end
+    end
+  end
+  table.sort(items, function(a, b)
+    return a.lastused > b.lastused
+  end)
+  if #items == 0 then
+    vim.notify("Keine ungespeicherten Dateien im Projekt", vim.log.levels.INFO, { title = "Suche" })
+    return
+  end
+
+  local pickers = require("telescope.pickers")
+  local finders = require("telescope.finders")
+  local conf = require("telescope.config").values
+  local actions = require("telescope.actions")
+  local action_state = require("telescope.actions.state")
+  local previewers = require("telescope.previewers")
+  pickers
+    .new({}, {
+      prompt_title = "Ungespeichert",
+      finder = finders.new_table({
+        results = items,
+        entry_maker = function(item)
+          return {
+            value = item,
+            display = item.rel,
+            ordinal = item.rel,
+            filename = item.path,
+            bufnr = item.bufnr,
+          }
+        end,
+      }),
+      sorter = conf.generic_sorter({}),
+      previewer = previewers.new_buffer_previewer({
+        define_preview = function(self, entry)
+          if entry.bufnr and vim.api.nvim_buf_is_valid(entry.bufnr) then
+            vim.api.nvim_win_set_buf(self.state.winid, entry.bufnr)
+          end
+        end,
+      }),
+      attach_mappings = function(prompt_bufnr)
+        actions.select_default:replace(function()
+          local entry = action_state.get_selected_entry()
+          actions.close(prompt_bufnr)
+          if entry and entry.bufnr and vim.api.nvim_buf_is_valid(entry.bufnr) then
+            vim.api.nvim_set_current_buf(entry.bufnr)
+          end
+        end)
+        return true
+      end,
+    })
+    :find()
+end
+
+function M.find_directory()
+  local cwd = require("colejj.project").project_root()
+  local find_command
+  if vim.fn.executable("fd") == 1 then
+    find_command = {
+      "fd",
+      "--type",
+      "d",
+      "--hidden",
+      "--exclude",
+      ".git",
+      "--exclude",
+      "target",
+      "--exclude",
+      "node_modules",
+      "--exclude",
+      "dist",
+    }
+  else
+    find_command = { "find", ".", "-type", "d", "-not", "-path", "*/.git/*", "-not", "-path", "*/target/*" }
+  end
+  require("telescope.builtin").find_files({
+    prompt_title = "Verzeichnis",
+    cwd = cwd,
+    find_command = find_command,
+    attach_mappings = function(prompt_bufnr)
+      local actions = require("telescope.actions")
+      local action_state = require("telescope.actions.state")
+      actions.select_default:replace(function()
+        local entry = action_state.get_selected_entry()
+        actions.close(prompt_bufnr)
+        if not entry then
+          return
+        end
+        local dir = entry.path or entry.value
+        if not dir:match("^/") then
+          dir = cwd .. "/" .. dir
+        end
+        require("oil").open(dir)
+      end)
+      return true
+    end,
+  })
+end
+
+local function file_key(path)
+  if type(path) ~= "string" or path == "" then
+    return nil
+  end
+  local abs = vim.fs.normalize(vim.fn.fnamemodify(path, ":p"))
+  return vim.uv.fs_realpath(abs) or abs
+end
+
+local function last_positions()
+  local by_path = {}
+  local function remember(path, lnum, col)
+    local key = file_key(path)
+    if not key or type(lnum) ~= "number" or lnum < 1 then
+      return
+    end
+    by_path[key] = {
+      lnum = lnum,
+      col = (col and col > 0) and col or 1,
+    }
+  end
+
+  for _, mark in ipairs(vim.fn.getmarklist()) do
+    local pos = mark.pos
+    if pos then
+      remember(mark.file, pos[2], pos[3])
+    end
+  end
+
+  local jumplist = vim.fn.getjumplist()[1] or {}
+  for _, jump in ipairs(jumplist) do
+    local path = jump.filename
+    if (not path or path == "") and jump.bufnr and jump.bufnr > 0 and vim.api.nvim_buf_is_valid(jump.bufnr) then
+      path = vim.api.nvim_buf_get_name(jump.bufnr)
+    end
+    remember(path, jump.lnum, (jump.col or 0) + 1)
+  end
+
+  for _, info in ipairs(vim.fn.getbufinfo()) do
+    if info.name and info.name ~= "" then
+      local lnum = info.lnum or 0
+      local col = 1
+      if info.loaded == 1 and vim.api.nvim_buf_is_valid(info.bufnr) then
+        local mark = vim.api.nvim_buf_get_mark(info.bufnr, '"')
+        if mark[1] > 0 then
+          lnum = mark[1]
+          col = mark[2] + 1
+        end
+      end
+      remember(info.name, lnum, col)
+    end
+  end
+
+  for _, win in ipairs(vim.api.nvim_list_wins()) do
+    local buf = vim.api.nvim_win_get_buf(win)
+    local name = vim.api.nvim_buf_get_name(buf)
+    local pos = vim.api.nvim_win_get_cursor(win)
+    remember(name, pos[1], pos[2] + 1)
+  end
+
+  return by_path
+end
+
+function M.oldfiles()
+  local positions = last_positions()
+  local make_entry = require("telescope.make_entry")
+  local conf = require("telescope.config").values
+  local opts = { path_display = { "tail" } }
+  local maker = make_entry.gen_from_file(opts)
+
+  opts.entry_maker = function(path)
+    local entry = maker(path)
+    if not entry then
+      return entry
+    end
+    local pos = positions[file_key(path)]
+    if pos then
+      entry.lnum = pos.lnum
+      entry.col = pos.col
+    end
+    return entry
+  end
+
+  local previewer = conf.grep_previewer(opts)
+  local title = previewer.title
+  previewer._title_fn = function()
+    return "Letzte Position"
+  end
+  previewer._dyn_title_fn = function(_, entry)
+    local name = vim.fn.fnamemodify(entry.path or entry.filename or entry.value or "", ":t")
+    if entry.lnum and entry.lnum > 0 then
+      return string.format("%s:%d", name, entry.lnum)
+    end
+    return name
+  end
+  previewer.title = function(self, entry)
+    return title(self, entry, true)
+  end
+  opts.previewer = previewer
+
+  require("telescope.builtin").oldfiles(opts)
 end
 
 return M

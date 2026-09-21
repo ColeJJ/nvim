@@ -99,6 +99,35 @@ return {
           postgres = {
             ["Daten anzeigen (max. 200)"] = 'SELECT * FROM "{{ .Schema }}"."{{ .Table }}" LIMIT 200;',
             ["Zeilen zählen"] = 'SELECT count(*) AS rows FROM "{{ .Schema }}"."{{ .Table }}";',
+            ["Spalten & Typen"] = [[
+SELECT ordinal_position, column_name, data_type, udt_name, is_nullable, column_default, character_maximum_length
+FROM information_schema.columns
+WHERE table_schema = '{{ .Schema }}' AND table_name = '{{ .Table }}'
+ORDER BY ordinal_position;]],
+            ["Constraints"] = [[
+SELECT tc.constraint_name, tc.constraint_type, kcu.column_name,
+       ccu.table_schema AS foreign_schema, ccu.table_name AS foreign_table, ccu.column_name AS foreign_column
+FROM information_schema.table_constraints tc
+LEFT JOIN information_schema.key_column_usage kcu
+  ON tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema
+LEFT JOIN information_schema.constraint_column_usage ccu
+  ON tc.constraint_name = ccu.constraint_name AND tc.table_schema = ccu.table_schema
+WHERE tc.table_schema = '{{ .Schema }}' AND tc.table_name = '{{ .Table }}'
+ORDER BY tc.constraint_type, tc.constraint_name, kcu.ordinal_position;]],
+            ["Tabellentyp"] = [[
+SELECT n.nspname AS schema, c.relname AS name,
+       CASE c.relkind
+         WHEN 'r' THEN 'table'
+         WHEN 'v' THEN 'view'
+         WHEN 'm' THEN 'materialized view'
+         WHEN 'p' THEN 'partitioned table'
+         WHEN 'f' THEN 'foreign table'
+         ELSE c.relkind::text
+       END AS kind,
+       pg_catalog.obj_description(c.oid, 'pg_class') AS comment
+FROM pg_catalog.pg_class c
+JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+WHERE n.nspname = '{{ .Schema }}' AND c.relname = '{{ .Table }}';]],
           },
         },
         drawer = {

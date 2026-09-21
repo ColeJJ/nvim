@@ -20,8 +20,8 @@ function M.setup()
       end, "Format (IntelliJ-Profil)")
       map("<leader>ju", lsp.update_project, "Maven neu importieren")
       map("<leader>jh", lsp.health, "JDT.LS Health")
+      map("<leader>jr", lsp.restart, "JDT.LS neu starten")
       map("<leader>jW", lsp.reset_workspace, "JDT.LS Workspace reset")
-      map("<leader>jn", commands.new_type, "Neuer Typ")
       map("<leader>jI", commands.toggle_impl, "Interface ↔ Impl")
       map("<leader>ji", commands.super_implementation, "Super-Methode")
       map("<leader>jg", function()
@@ -78,6 +78,12 @@ function M.setup()
         require("colejj.java.maven").dependency_tree()
       end, "dependency:tree")
     end,
+  })
+
+  vim.keymap.set("n", "<leader>jn", commands.new_type, { desc = "Neuer Typ" })
+  vim.keymap.set("n", "<leader>jr", lsp.restart, { desc = "JDT.LS neu starten" })
+  vim.api.nvim_create_user_command("JdtlsRestart", lsp.restart, {
+    desc = "JDT.LS neu starten",
   })
 
   vim.keymap.set("n", "<leader>rr", runner.run_config, { desc = "Run-Config starten" })

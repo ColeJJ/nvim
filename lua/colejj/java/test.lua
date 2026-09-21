@@ -12,9 +12,11 @@ local run_gen = 0
 local log = {}
 local started_at = 0
 local locs = {}
+local failure_details = {}
 local running = false
 local expected = {}
 local live = {}
+local TEST_TIMEOUT_SEC = 120
 
 local ICONS = {
   pass = "✓",
@@ -204,12 +206,22 @@ local function methods_from_file(path)
 end
 
 local function unescape(text)
-  return (text or "")
+  -- string.gsub liefert (Text, Anzahl). Ohne Klammern reicht Lua beide Werte
+  -- z. B. an tonumber(value, base) weiter; der Trefferzähler wird dann zur
+  -- ungültigen Zahlenbasis und der Exit-Callback bricht ab.
+  local value = text or ""
+  value = value:gsub("&#x([%x]+);", function(hex)
+    return vim.fn.nr2char(tonumber(hex, 16))
+  end)
+  value = value:gsub("&#(%d+);", function(decimal)
+    return vim.fn.nr2char(tonumber(decimal, 10))
+  end)
+  return (value
     :gsub("&lt;", "<")
     :gsub("&gt;", ">")
     :gsub("&amp;", "&")
     :gsub("&quot;", '"')
-    :gsub("&apos;", "'")
+    :gsub("&apos;", "'"))
 end
 
 local function attr(tag, name)
@@ -342,14 +354,38 @@ local function collect_suites(target)
   local suites = {}
   local seen = {}
   for _, dir in ipairs(report_dirs(target)) do
-        for _, file in ipairs(vim.fn.glob(dir .. "/*.xml", false, true)) do
+    for _, file in ipairs(vim.fn.glob(dir .. "/*.xml", false, true)) do
       local stat = vim.uv.fs_stat(file)
       if stat and stat.mtime.sec + 2 >= math.floor(started_at) and not seen[file] then
         seen[file] = true
         local xml = table.concat(vim.fn.readfile(file), "\n")
-        local suite = parse_suite(xml)
-        if suite and (not target.class or suite.name:find(target.class, 1, true) or target.class:find(suite.name, 1, true)) then
-          suites[#suites + 1] = suite
+        local suite = xml:find("</testsuite>", 1, true) and parse_suite(xml) or nil
+        if suite then
+          if target.class then
+            local cases = {}
+            for _, case in ipairs(suite.cases) do
+              if case.classname == target.class or vim.startswith(case.classname or "", target.class .. "$") then
+                cases[#cases + 1] = case
+              end
+            end
+            suite.cases = cases
+            suite.tests = #cases
+            suite.failures = 0
+            suite.errors = 0
+            suite.skipped = 0
+            suite.time = 0
+            for _, case in ipairs(cases) do
+              suite.time = suite.time + (case.time or 0)
+              if case.status == "fail" then
+                suite.failures = suite.failures + 1
+              elseif case.status == "skip" then
+                suite.skipped = suite.skipped + 1
+              end
+            end
+          end
+          if not target.class or #suite.cases > 0 then
+            suites[#suites + 1] = suite
+          end
         end
       end
     end
@@ -407,19 +443,43 @@ end
 
 local function first_error_line(case)
   if case.errtype and case.errtype ~= "" then
-    local msg = case.message
-    if msg and msg ~= "" and not msg:find(case.errtype, 1, true) then
-      return case.errtype .. ": " .. msg:match("^[^\n]*")
-    end
     return case.errtype
   end
-  if case.message and case.message ~= "" then
-    return case.message:match("^[^\n]*")
+  for line in ((case.message or "") .. "\n"):gmatch("([^\n]*)\n") do
+    if vim.trim(line) ~= "" then
+      return vim.trim(line)
+    end
   end
   if case.trace and case.trace ~= "" then
-    return case.trace:match("^[^\n]*")
+    for line in (case.trace .. "\n"):gmatch("([^\n]*)\n") do
+      if vim.trim(line) ~= "" then
+        return vim.trim(line)
+      end
+    end
   end
   return "Test failed"
+end
+
+local function assertion_lines(case)
+  local text = case.message
+  if not text or vim.trim(text) == "" then
+    text = case.trace or ""
+  end
+  local lines = {}
+  for raw in (text .. "\n"):gmatch("([^\n]*)\n") do
+    local line = vim.trim(raw)
+    if line:find("^at%s") then
+      break
+    end
+    if line ~= "" and line ~= case.errtype and not line:find("^" .. vim.pesc(case.errtype or "") .. ":?%s*$") then
+      lines[#lines + 1] = line
+      if #lines >= 16 then
+        lines[#lines + 1] = "… vollständiger Fehler mit e"
+        break
+      end
+    end
+  end
+  return lines
 end
 
 local function short_trace(trace)
@@ -431,7 +491,7 @@ local function short_trace(trace)
   for line in (trace .. "\n"):gmatch("([^\n]*)\n") do
     if line:find("at ") then
       n = n + 1
-      if n > 6 then
+      if n > 4 then
         lines[#lines + 1] = "        …"
         break
       end
@@ -439,6 +499,73 @@ local function short_trace(trace)
     end
   end
   return lines
+end
+
+local function full_failure_lines(case)
+  local lines = { case.errtype and case.errtype ~= "" and case.errtype or "Test failed", "" }
+  local text = case.message or ""
+  if vim.trim(text) ~= "" then
+    vim.list_extend(lines, vim.split(text, "\n", { plain = true }))
+  end
+  if case.trace and vim.trim(case.trace) ~= "" then
+    if vim.trim(text) ~= "" then
+      lines[#lines + 1] = ""
+      lines[#lines + 1] = "Stacktrace"
+    end
+    vim.list_extend(lines, vim.split(case.trace, "\n", { plain = true }))
+  end
+  return lines
+end
+
+local function failure_at_cursor()
+  local lnum = vim.api.nvim_win_get_cursor(0)[1]
+  for i = lnum, 1, -1 do
+    if failure_details[i] then
+      return failure_details[i]
+    end
+    if locs[i] and i < lnum then
+      break
+    end
+  end
+end
+
+local function open_failure()
+  local case = failure_at_cursor()
+  if not case then
+    vim.notify("Cursor steht auf keinem fehlgeschlagenen Test", vim.log.levels.INFO, { title = "Tests" })
+    return
+  end
+  local detail_buf = vim.api.nvim_create_buf(false, true)
+  vim.bo[detail_buf].bufhidden = "wipe"
+  vim.bo[detail_buf].filetype = "text"
+  vim.api.nvim_buf_set_lines(detail_buf, 0, -1, false, full_failure_lines(case))
+  vim.bo[detail_buf].modifiable = false
+  local width = math.max(60, math.floor(vim.o.columns * 0.86))
+  local height = math.max(12, math.floor(vim.o.lines * 0.76))
+  width = math.min(width, vim.o.columns - 4)
+  height = math.min(height, vim.o.lines - 4)
+  local detail_win = vim.api.nvim_open_win(detail_buf, true, {
+    relative = "editor",
+    style = "minimal",
+    border = "rounded",
+    title = " Testfehler · q/Esc schließen ",
+    title_pos = "center",
+    width = width,
+    height = height,
+    row = math.floor((vim.o.lines - height) / 2),
+    col = math.floor((vim.o.columns - width) / 2),
+  })
+  vim.wo[detail_win].wrap = true
+  vim.wo[detail_win].linebreak = true
+  vim.wo[detail_win].breakindent = true
+  vim.wo[detail_win].cursorline = true
+  local close = function()
+    if vim.api.nvim_win_is_valid(detail_win) then
+      vim.api.nvim_win_close(detail_win, true)
+    end
+  end
+  vim.keymap.set("n", "q", close, { buffer = detail_buf, silent = true })
+  vim.keymap.set("n", "<Esc>", close, { buffer = detail_buf, silent = true })
 end
 
 local function ensure_window()
@@ -465,7 +592,9 @@ local function ensure_window()
     vim.wo[win].number = false
     vim.wo[win].relativenumber = false
     vim.wo[win].signcolumn = "no"
-    vim.wo[win].wrap = false
+    vim.wo[win].wrap = true
+    vim.wo[win].linebreak = true
+    vim.wo[win].breakindent = true
     vim.wo[win].cursorline = true
     if vim.api.nvim_win_is_valid(src) then
       vim.api.nvim_set_current_win(src)
@@ -487,6 +616,7 @@ local function ensure_window()
     end
     jump_to(loc)
   end, vim.tbl_extend("force", opts, { desc = "Zur Testmethode" }))
+  vim.keymap.set("n", "e", open_failure, vim.tbl_extend("force", opts, { desc = "Vollständiger Testfehler" }))
 end
 
 local function paint(lines, highlights)
@@ -519,6 +649,7 @@ local function add(lines, highlights, locs_map, text, group, loc, time)
   if loc then
     locs_map[lnum] = loc
   end
+  return lnum
 end
 
 local function case_key(name)
@@ -556,14 +687,53 @@ local function merge_cases(suites)
   return out
 end
 
+local function reports_complete(target)
+  local suites = collect_suites(target)
+  if #suites == 0 then
+    return false, 0
+  end
+  local found = {}
+  local failures = 0
+  for _, suite in ipairs(suites) do
+    failures = failures + (suite.failures or 0) + (suite.errors or 0)
+    for _, case in ipairs(suite.cases) do
+      found[case_key(case.name)] = true
+    end
+  end
+  if #expected == 0 then
+    return next(found) ~= nil, failures
+  end
+  for _, name in ipairs(expected) do
+    if not found[name] then
+      return false, failures
+    end
+  end
+  return true, failures
+end
+
 local function render(opts)
   opts = opts or {}
   running = opts.running == true
   locs = {}
+  failure_details = {}
   local lines, highlights = {}, {}
   local target = last
   local suites = target and collect_suites(target) or {}
   local simple = target and ((target.class or ""):match("([^%.]+)$") or target.spec or "Tests") or "Tests"
+
+  if target and target.timed_out then
+    add(lines, highlights, locs, ICONS.fail .. "  " .. simple, "ColejjTestFail")
+    add(
+      lines,
+      highlights,
+      locs,
+      string.format("    Zeitüberschreitung nach %d sec (%s)", TEST_TIMEOUT_SEC, target.timed_out),
+      "ColejjTestFail"
+    )
+    add(lines, highlights, locs, "    SPC r t S stoppt einen laufenden Test jederzeit.", "Comment")
+    paint(lines, highlights)
+    return
+  end
 
   if opts.compile_failed and #suites == 0 then
     add(lines, highlights, locs, ICONS.fail .. "  Build fehlgeschlagen", "ColejjTestFail")
@@ -584,22 +754,38 @@ local function render(opts)
     end
   end
   local cases = merge_cases(suites)
-  local failed, passed = 0, 0
+  local failed, passed, skipped, total_time = 0, 0, 0, 0
   for _, case in ipairs(cases) do
     if case.status == "fail" then
       failed = failed + 1
     elseif case.status == "pass" then
       passed = passed + 1
+    elseif case.status == "skip" then
+      skipped = skipped + 1
     end
+    total_time = total_time + (case.time or 0)
   end
-  local class_status = running and #suites == 0 and "run" or (failed > 0 and "fail" or (#cases > 0 and "pass" or "run"))
+  local class_status = running and "run" or (failed > 0 and "fail" or (#cases > 0 and "pass" or "run"))
   add(lines, highlights, locs, ICONS[class_status] .. "  " .. simple, hl_for(class_status), {
     class = target and target.class,
     classname = target and target.class,
     file = target and target.file,
-  })
-  if running and #suites == 0 then
-    add(lines, highlights, locs, "    " .. (target.phase or "Tests laufen …"), "ColejjTestRun")
+  }, not running and total_time > 0 and total_time or nil)
+  if running then
+    local elapsed = math.max(0, os.time() - started_at)
+    add(
+      lines,
+      highlights,
+      locs,
+      "    " .. (target.phase or "Tests laufen …") .. "  ·  " .. format_time(elapsed),
+      "ColejjTestRun"
+    )
+  elseif #cases > 0 then
+    local summary = string.format("    %d bestanden  ·  %d fehlgeschlagen", passed, failed)
+    if skipped > 0 then
+      summary = summary .. string.format("  ·  %d übersprungen", skipped)
+    end
+    add(lines, highlights, locs, summary, failed > 0 and "ColejjTestFail" or "ColejjTestPass")
   end
 
   for _, case in ipairs(cases) do
@@ -619,10 +805,25 @@ local function render(opts)
       case.time > 0 and case.time or nil
     )
     if case.status == "fail" then
-      add(lines, highlights, locs, "        " .. first_error_line(case), "ColejjTestFail", loc)
-      for _, line in ipairs(short_trace(case.trace)) do
-        add(lines, highlights, locs, line, "Comment", loc)
+      local failure_line = add(
+        lines,
+        highlights,
+        locs,
+        "        " .. first_error_line(case),
+        "ColejjTestFail",
+        loc
+      )
+      failure_details[failure_line] = case
+      for _, line in ipairs(assertion_lines(case)) do
+        local detail_line = add(lines, highlights, locs, "          " .. line, "ColejjTestFail", loc)
+        failure_details[detail_line] = case
       end
+      for _, line in ipairs(short_trace(case.trace)) do
+        local trace_line = add(lines, highlights, locs, line, "Comment", loc)
+        failure_details[trace_line] = case
+      end
+      local hint_line = add(lines, highlights, locs, "        e: vollständigen Fehler öffnen", "Comment", loc)
+      failure_details[hint_line] = case
     end
   end
 
@@ -686,10 +887,13 @@ function M.toggle()
   end
 end
 
-local function start_watch()
+local function start_watch(on_tick)
   stop_timer()
   timer = vim.uv.new_timer()
   timer:start(250, 250, vim.schedule_wrap(function()
+    if on_tick and on_tick() then
+      return
+    end
     if any_running() then
       render({ running = true })
     end
@@ -726,10 +930,11 @@ local function start_cmd(cmd, cwd, on_exit)
   })
   if not id or id <= 0 then
     on_exit(1)
-    return
+    return nil
   end
   jobs[#jobs + 1] = id
   job = id
+  return id
 end
 
 local function run_target(target)
@@ -752,6 +957,7 @@ local function run_target(target)
     pcall(vim.cmd.write)
   end
   target.reports_dir = (target.module_dir or target.root) .. "/target/junit-console-reports"
+  target.timed_out = nil
   vim.fn.delete(target.reports_dir, "rf")
   vim.fn.mkdir(target.reports_dir, "p")
   ensure_window()
@@ -761,6 +967,8 @@ local function run_target(target)
   local compile_done, compile_ok = false, true
   local cp_done, classpath = false, nil
   local started_junit = false
+  local junit_job
+  local finished = false
 
   local function set_phase()
     if not compile_done then
@@ -777,9 +985,10 @@ local function run_target(target)
   end
 
   local function finish_run(code)
-    if not alive() then
+    if not alive() or finished then
       return
     end
+    finished = true
     job = nil
     stop_timer()
     local suites = collect_suites(target)
@@ -808,7 +1017,7 @@ local function run_target(target)
       cmd = junit.surefire_cmd(target)
       cwd = target.root
     end
-    start_cmd(cmd, cwd, finish_run)
+    junit_job = start_cmd(cmd, cwd, finish_run)
   end
 
   if junit.needs_compile(target) then
@@ -846,7 +1055,35 @@ local function run_target(target)
   end)
 
   try_junit()
-  start_watch()
+  start_watch(function()
+    if not alive() or finished then
+      return false
+    end
+    if os.time() - started_at >= TEST_TIMEOUT_SEC then
+      target.timed_out = target.phase or "Vorbereitung"
+      for _, id in ipairs(jobs) do
+        if job_running(id) then
+          pcall(vim.fn.jobstop, id)
+        end
+      end
+      finish_run(124)
+      return true
+    end
+    if not started_junit then
+      return false
+    end
+    local complete, failures = reports_complete(target)
+    if not complete then
+      return false
+    end
+    -- Die XML-Reports sind vollständig: Tests sind beendet. Manche Libraries
+    -- halten den ConsoleLauncher danach mit Non-Daemon-Threads offen.
+    finish_run(failures > 0 and 1 or 0)
+    if job_running(junit_job) then
+      pcall(vim.fn.jobstop, junit_job)
+    end
+    return true
+  end)
 end
 
 function M.run_at_point()

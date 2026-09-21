@@ -13,6 +13,20 @@ return {
     keys = {
       { "<leader>gs", "<cmd>LazyGitCurrentFile<CR>", desc = "LazyGit (Datei)" },
       { "<leader>gg", "<cmd>LazyGit<CR>", desc = "LazyGit" },
+      {
+        "<leader>gd",
+        function()
+          require("colejj.git.filediff").open_head()
+        end,
+        desc = "Datei-Diff vs HEAD",
+      },
+      {
+        "<leader>gD",
+        function()
+          require("colejj.git.filediff").open_base()
+        end,
+        desc = "Datei-Diff vs Abzweigpunkt",
+      },
     },
   },
   {
@@ -61,25 +75,6 @@ return {
       return require("colejj.git.diffview").opts()
     end,
     keys = {
-      {
-        "<leader>gd",
-        function()
-          require("colejj.git.diffview").open("DiffviewOpen")
-        end,
-        desc = "Diff gegen HEAD",
-      },
-      {
-        "<leader>gD",
-        function()
-          local base = vim.fn.systemlist("git merge-base HEAD origin/main 2>/dev/null || git merge-base HEAD origin/master 2>/dev/null || git merge-base HEAD main")[1]
-          if base and base ~= "" then
-            require("colejj.git.diffview").open("DiffviewOpen " .. base)
-          else
-            require("colejj.git.diffview").open("DiffviewOpen")
-          end
-        end,
-        desc = "Diff gegen Basis-Branch",
-      },
       {
         "<leader>gh",
         function()

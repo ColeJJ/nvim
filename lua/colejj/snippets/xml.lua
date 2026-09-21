@@ -3,117 +3,681 @@ local s = ls.snippet
 local t = ls.text_node
 local i = ls.insert_node
 local f = ls.function_node
+local extras = require("luasnip.extras")
+local rep = extras.rep
 local h = require("colejj.snippets.helpers")
 
 local function uuid()
-  return h.uuid()
+  return f(function()
+    return h.uuid()
+  end)
+end
+
+local function fk(key)
+  return f(function(_, snip)
+    return h.fk_once(snip, key)
+  end)
+end
+
+local function snip(trig, name, nodes)
+  return s({ trig = trig, name = name, dscr = name, wordTrig = true }, nodes)
 end
 
 local snippets = {
-  s("genid", f(uuid)),
-  s("sod_uuid", f(uuid)),
-  s("precon", {
+  snip("precon", "precon", {
     t({ '<preConditions onFail="MARK_RAN">', "  " }),
     i(0),
     t({ "", "</preConditions>" }),
   }),
-  s("cs", {
+
+  snip("cs", "cs (leeres Changeset)", {
     t('<changeSet id="'),
-    f(uuid),
+    uuid(),
     t({ '" author="tun">', "  " }),
     i(0),
     t({ "", "</changeSet>" }),
   }),
-  s("sod_cs", {
+
+  snip("createshadow", "createshadow", {
     t('<changeSet id="'),
-    f(uuid),
-    t({ '" author="CHANGE_TO_YOUR_OWN_NAME">', "    ", "</changeSet>" }),
-  }),
-  s("varchar", { t('<column name="'), i(0), t('" type="varchar(255)"/>') }),
-  s("bigint", { t('<column name="'), i(0), t('" type="${bigintType}"/>') }),
-  s("datecolumn", { t('<column name="'), i(0), t('" type="${dateType}"/>') }),
-  s("varcharMax", { t('<column name="'), i(0), t('" type="clob"/>') }),
-  s("nullable", t('<constraints nullable="true"/>')),
-  s("notnull", t('<constraints nullable="false"/>')),
-  s("droptable", { t('<dropTable tableName="'), i(1), t('"/>') }),
-  s("dropCol", { t('<dropColumn tableName="'), i(1), t('" columnName="'), i(2), t('"/>') }),
-  s("dropIndex", { t('<dropIndex tableName="'), i(1), t('" indexName="'), i(2), t('"/>') }),
-  s("dropFkConstraint", {
-    t('<dropForeignKeyConstraint baseTableName="'),
+    uuid(),
+    t({ '" author="jkr">', '    <createTable tableName="' }),
     i(1),
-    t('" constraintName="'),
-    i(2),
-    t('"/>'),
+    t({
+      '">',
+      '      <column autoIncrement="true" name="shadowIdInternal" type="${bigintType}">',
+      '        <constraints primaryKey="true" primaryKeyName="PK__',
+    }),
+    rep(1),
+    t({
+      '"/>',
+      "      </column>",
+      '      <column name="deleteDateInternal" type="${dateType}"/>',
+      '      <column name="importId" type="varchar(255)"/>',
+      '      <column name="dirty" type="${booleanType}">',
+      '        <constraints nullable="false"/>',
+      "      </column>",
+      '      <column name="idInternal" type="${bigintType}"/>',
+      '      <column name="shadowCreationDate" type="${dateType}">',
+      '        <constraints nullable="false"/>',
+      "      </column>",
+      '      <column name="shadowVersionInternal" type="int"/>',
+      '      <column name="state" type="varchar(255)">',
+      '        <constraints nullable="false"/>',
+      "      </column>",
+      '      <column name="versionInternal" type="int"/>',
+      '      <column name="shadowCreator_idInternal" type="${bigintType}">',
+      '        <constraints nullable="false"/>',
+      "      </column>",
+      "",
+      "      ",
+    }),
+    i(0),
+    t({
+      "",
+      "    </createTable>",
+      "  </changeSet>",
+      "",
+      '  <changeSet id="',
+    }),
+    uuid(),
+    t({
+      '" author="jkr">',
+      '    <addForeignKeyConstraint baseColumnNames="shadowCreator_idInternal"',
+      '      baseTableName="',
+    }),
+    rep(1),
+    t('" constraintName="FK_'),
+    rep(1),
+    t({
+      '_shadowCreator"',
+      '      deferrable="false" initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION"',
+      '      referencedColumnNames="idInternal" referencedTableName="SOD_SodalisBenutzer" validate="true"/>',
+      "  </changeSet>",
+    }),
   }),
-  s("addcol_string", {
+
+  snip("createsolid", "createsolid", {
+    t('<changeSet id="'),
+    uuid(),
+    t({ '" author="jkr">', '    <createTable tableName="' }),
+    i(1),
+    t({
+      '">',
+      '      <column autoIncrement="true" name="idInternal" type="${bigintType}">',
+      '        <constraints primaryKey="true" primaryKeyName="PK__',
+    }),
+    rep(1),
+    t({
+      '"/>',
+      "      </column>",
+      '      <column name="deleteDateInternal" type="${dateType}"/>',
+      '      <column name="importId" type="varchar(255)"/>',
+      '      <column name="lastLockedDate" type="${dateType}"/>',
+      '      <column name="lastMergedDate" type="${dateType}"/>',
+      '      <column name="versionInternal" type="int"/>',
+      "      ",
+      "      ",
+    }),
+    i(0),
+    t({ "", "    </createTable>", " </changeSet>" }),
+  }),
+
+  snip("varchar", "varchar", { t('<column name="'), i(0), t('" type="varchar(255)"/>') }),
+  snip("bigint", "bigint", { t('<column name="'), i(0), t('" type="${bigintType}"/>') }),
+  snip("booleanLiqui", "booleanLiqui", {
+    t('<column name="'),
+    i(0),
+    t({
+      '" type="${booleanType}" defaultValue="0">',
+      '  <constraints nullable="false"/>',
+      "</column>",
+    }),
+  }),
+  snip("varcharMax", "varcharMax", { t('<column name="'), i(0), t('" type="clob"/>') }),
+
+  snip("fk", "fk", {
+    t('<changeSet id="'),
+    uuid(),
+    t({ '" author="jkr">', '<addForeignKeyConstraint baseColumnNames="' }),
+    i(1),
+    t({ '"', '      baseTableName="' }),
+    i(2),
+    t({ '"', '      referencedColumnNames="idInternal" referencedTableName="' }),
+    i(3),
+    t({ '"', '      constraintName="FK_' }),
+    rep(2),
+    t("_"),
+    rep(3),
+    t("_"),
+    rep(1),
+    t({
+      '"',
+      '      deferrable="false" initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION" validate="true"/>',
+      "</changeSet>",
+      "",
+      ' <changeSet id="',
+    }),
+    uuid(),
+    t({ '" author="jkr">', '    <createIndex tableName="' }),
+    rep(2),
+    t({ '"', '      indexName="FK_' }),
+    rep(2),
+    t("_"),
+    rep(3),
+    t("_"),
+    rep(1),
+    t({ '">', '      <column name="' }),
+    rep(1),
+    t({ '"/>', "    </createIndex>", "  </changeSet>" }),
+  }),
+
+  snip("datecolumn", "datecolumn", { t('<column name="'), i(0), t('" type="${dateType}"/>') }),
+
+  snip("addcol_bool", "addcol_bool", {
+    t('<addColumn tableName="'),
+    i(1),
+    t({ '">', '    <column name="' }),
+    i(2),
+    t({
+      '" type="${booleanType}" defaultValue="0">',
+      '        <constraints nullable="false"/>',
+      "    </column>",
+      "</addColumn>",
+    }),
+  }),
+
+  snip("addcol_string", "addcol_string", {
     t('<addColumn tableName="'),
     i(1),
     t({ '">', '    <column name="' }),
     i(2),
     t({ '" type="varchar(255)" />', "</addColumn>" }),
   }),
-  s("addcol_bool", {
+
+  snip("dropCol", "dropCol", {
+    t('<dropColumn tableName="'),
+    i(1),
+    t('" columnName="'),
+    i(2),
+    t('"/>'),
+  }),
+
+  snip("addnotnull", "addnotnull", {
+    t('<addNotNullConstraint tableName="'),
+    i(1),
+    t('" columnName="'),
+    i(2),
+    t('" columnDataType="'),
+    i(3),
+    t('" defaultNullValue="'),
+    i(4),
+    t('"/>'),
+  }),
+
+  snip("droptable", "droptable", { t('<dropTable tableName="'), i(1), t('"/>') }),
+
+  snip("addcol", "addcol", {
     t('<addColumn tableName="'),
     i(1),
     t({ '">', '    <column name="' }),
     i(2),
-    t({ '" type="${booleanType}" defaultValue="0">', '        <constraints nullable="false"/>', "    </column>", "</addColumn>" }),
+    t('" type="'),
+    i(3),
+    t('" defaultValue="'),
+    i(4),
+    t({ '">', '        <constraints nullable="' }),
+    i(5),
+    t({ '"/>', "    </column>", "</addColumn>" }),
   }),
-  s("addcol_date", {
+
+  snip("addcol_date", "addcol_date", {
     t('<addColumn tableName="'),
     i(1),
     t({ '">', '    <column name="' }),
     i(2),
     t({ '" type="${dateType}" />', "</addColumn>" }),
   }),
-  s("addcol_int", {
+
+  snip("ctable", "ctable", {
+    t('<createTable tableName="'),
+    i(1),
+    t({ '">', "    // addcol...", "</createTable>" }),
+  }),
+
+  snip("addcol_int", "addcol_int", {
     t('<addColumn tableName="'),
     i(1),
     t({ '">', '    <column name="' }),
     i(2),
-    t({ '" type="${bigintType}">', '        <constraints nullable="false"/>', "    </column>", "</addColumn>" }),
+    t({
+      '" type="${bigintType}">',
+      '        <constraints nullable="false"/>',
+      "    </column>",
+      "</addColumn>",
+    }),
   }),
-  s("sod_fk_name", { t("FK_"), f(h.fk_suffix) }),
-  s("sod_cs_add_column", {
+
+  snip("dropNotNull", "dropNotNull", {
+    t({ "<dropNotNullConstraint", '    tableName="' }),
+    i(1),
+    t({ '"', '    columnName="' }),
+    i(2),
+    t({ '"', '    columnDataType="' }),
+    i(3),
+    t('"/>'),
+  }),
+
+  snip("nullable", "nullable", t('<constraints nullable="true"/>')),
+  snip("notnull", "notnull", t('<constraints nullable="false"/>')),
+  snip("dropIndex", "dropIndex", {
+    t('<dropIndex tableName="'),
+    i(1),
+    t('" indexName="'),
+    i(2),
+    t('"/>'),
+  }),
+  snip("dropFkConstraint", "dropFkConstraint", {
+    t('<dropForeignKeyConstraint baseTableName="'),
+    i(1),
+    t('" constraintName="'),
+    i(2),
+    t('"/>'),
+  }),
+
+  snip("sod_add_foreign_key", "sod_add_foreign_key (Foreign-Key hinzufuegen)", {
+    t('<addForeignKeyConstraint baseColumnNames="'),
+    i(2),
+    t('" baseTableName="'),
+    i(1),
+    t({ '"', '                             constraintName="' }),
+    fk("fk1"),
+    t({
+      '" deferrable="false"',
+      '                             initiallyDeferred="false"',
+      '                             onDelete="NO ACTION" onUpdate="NO ACTION"',
+      '                             referencedColumnNames="',
+    }),
+    i(4),
+    t({ '"', '                             referencedTableName="' }),
+    i(3),
+    t({
+      '" validate="true"/>',
+      "                             ",
+      '<createIndex tableName="',
+    }),
+    rep(1),
+    t('" indexName="'),
+    fk("fk1"),
+    t({ '">', '      <column name="' }),
+    rep(2),
+    t({ '"/>', "</createIndex>" }),
+  }),
+
+  snip("sod_cs", "sod_cs (leeres Changeset)", {
     t('<changeSet id="'),
-    f(uuid),
-    t({ '" author="CHANGE_TO_YOUR_OWN_NAME">', '    <preConditions onFail="MARK_RAN">', "      <not>", '        <columnExists tableName="' }),
+    uuid(),
+    t({ '" author="CHANGE_TO_YOUR_OWN_NAME">', "    ", "</changeSet>" }),
+  }),
+
+  snip("sod_cs_add_column", "sod_cs_add_column (Spalte hinzufuegen)", {
+    t('<changeSet id="'),
+    uuid(),
+    t({
+      '" author="CHANGE_TO_YOUR_OWN_NAME">',
+      '    <preConditions onFail="MARK_RAN">',
+      "      <not>",
+      '        <columnExists tableName="',
+    }),
     i(1),
     t('" columnName="'),
     i(2),
-    t({ '"/>', "      </not>", "    </preConditions>", '    <addColumn tableName="' }),
-    f(function(args)
-      return args[1][1]
-    end, { 1 }),
+    t({
+      '"/>',
+      "      </not>",
+      "    </preConditions>",
+      '    <addColumn tableName="',
+    }),
+    rep(1),
     t({ '">', '      <column name="' }),
-    f(function(args)
-      return args[2][1]
-    end, { 2 }),
+    rep(2),
     t('" type="'),
     i(3),
     t({ '"/>', "    </addColumn>", "</changeSet>" }),
   }),
-  s("sod_cs_drop_column", {
+
+  snip("sod_cs_drop_column", "sod_cs_drop_column (Spalte droppen)", {
     t('<changeSet id="'),
-    f(uuid),
-    t({ '" author="CHANGE_TO_YOUR_OWN_NAME">', '    <preConditions onFail="MARK_RAN">', '        <columnExists tableName="' }),
+    uuid(),
+    t({
+      '" author="CHANGE_TO_YOUR_OWN_NAME">',
+      '    <preConditions onFail="MARK_RAN">',
+      '        <columnExists tableName="',
+    }),
     i(1),
     t('" columnName="'),
     i(2),
-    t({ '"/>', "    </preConditions>", '    <dropColumn tableName="' }),
-    f(function(args)
-      return args[1][1]
-    end, { 1 }),
+    t({
+      '"/>',
+      "    </preConditions>",
+      '    <dropColumn tableName="',
+    }),
+    rep(1),
     t('" columnName="'),
-    f(function(args)
-      return args[2][1]
-    end, { 2 }),
+    rep(2),
     t({ '"/>', "</changeSet>" }),
   }),
+
+  snip("sod_cs_drop_fk", "sod_cs_drop_fk (Foreign-Key droppen)", {
+    t('<changeSet id="'),
+    uuid(),
+    t({
+      '" author="CHANGE_TO_YOUR_OWN_NAME">',
+      '    <preConditions onFail="MARK_RAN">',
+      '      <foreignKeyConstraintExists foreignKeyName="',
+    }),
+    i(2),
+    t({ '"', '                                  foreignKeyTableName="' }),
+    i(1),
+    t({
+      '"/>',
+      "    </preConditions>",
+      '    <dropForeignKeyConstraint baseTableName="',
+    }),
+    rep(1),
+    t({ '"', '                              constraintName="' }),
+    rep(2),
+    t({ '"/>', "  </changeSet>" }),
+  }),
+
+  snip("sod_cs_drop_index", "sod_cs_drop_index (Index droppen)", {
+    t('<changeSet id="'),
+    uuid(),
+    t({
+      '" author="CHANGE_TO_YOUR_OWN_NAME">',
+      '    <preConditions onFail="MARK_RAN">',
+      '      <indexExists tableName="',
+    }),
+    i(1),
+    t('" indexName="'),
+    i(2),
+    t({
+      '"/>',
+      "    </preConditions>",
+      '    <dropIndex tableName="',
+    }),
+    rep(1),
+    t('" indexName="'),
+    rep(2),
+    t({ '"/>', "  </changeSet>" }),
+  }),
+
+  snip("sod_cs_element_collection", "sod_cs_element_collection (Tabelle fuer @ElementCollection)", {
+    t('<changeSet id="'),
+    uuid(),
+    t({
+      '" author="CHANGE_TO_YOUR_OWN_NAME">',
+      '    <preConditions onFail="MARK_RAN">',
+      "      <not>",
+      '        <tableExists tableName="',
+    }),
+    i(1),
+    t({
+      '"/>',
+      "      </not>",
+      "    </preConditions>",
+      "",
+      '    <createTable tableName="',
+    }),
+    rep(1),
+    t({ '">', '      <column name="' }),
+    i(2),
+    t({
+      '" type="${bigIntType}">',
+      '        <constraints nullable="false"/>',
+      "      </column>",
+      '      <column name="',
+    }),
+    i(3),
+    t('" type="'),
+    i(4),
+    t({
+      '"/>',
+      "    </createTable>",
+      "",
+      '    <addForeignKeyConstraint baseColumnNames="',
+    }),
+    rep(2),
+    t('" baseTableName="'),
+    rep(1),
+    t({ '"', '                             constraintName="' }),
+    fk("fk1"),
+    t({
+      '" deferrable="false"',
+      '                             initiallyDeferred="false"',
+      '                             onDelete="NO ACTION" onUpdate="NO ACTION"',
+      '                             referencedColumnNames="',
+    }),
+    i(6),
+    t({ '"', '                             referencedTableName="' }),
+    i(5),
+    t({
+      '" validate="true"/>',
+      "                             ",
+      '    <createIndex tableName="',
+    }),
+    rep(1),
+    t('" indexName="'),
+    fk("fk1"),
+    t({ '">', '          <column name="' }),
+    rep(2),
+    t({ '"/>', "    </createIndex>", "  </changeSet>" }),
+  }),
+
+  snip("sod_cs_shadow", "sod_cs_shadow (Tabelle fuer Shadow anlegen)", {
+    t('<changeSet id="'),
+    uuid(),
+    t({
+      '" author="CHANGE_TO_YOUR_OWN_NAME">',
+      '    <preConditions onFail="MARK_RAN">',
+      "      <not>",
+      '        <tableExists tableName="',
+    }),
+    i(1),
+    t({
+      '"/>',
+      "      </not>",
+      "    </preConditions>",
+      "       ",
+      '    <createTable tableName="',
+    }),
+    rep(1),
+    t({
+      '">',
+      '      <column autoIncrement="true" name="shadowIdInternal" type="${bigintType}">',
+      '        <constraints nullable="false" primaryKey="true"',
+      '                     primaryKeyName="pk_',
+    }),
+    rep(1),
+    t({
+      '"/>',
+      "      </column>",
+      '      <column name="deleteDateInternal" type="${dateType}"/>',
+      '      <column name="importId" type="varchar(255)"/>',
+      '      <column name="dirty" type="${booleanType}">',
+      '        <constraints nullable="false"/>',
+      "      </column>",
+      '      <column name="idInternal" type="${bigintType}"/>',
+      '      <column name="shadowCreationDate" type="${dateType}">',
+      '        <constraints nullable="false"/>',
+      "      </column>",
+      '      <column name="shadowVersionInternal" type="int"/>',
+      '      <column name="state" type="varchar(255)">',
+      '        <constraints nullable="false"/>',
+      "      </column>",
+      '      <column name="versionInternal" type="int"/>',
+      '      <column name="shadowCreator_idInternal" type="${bigintType}">',
+      '        <constraints nullable="false"/>',
+      "      </column>",
+      "    </createTable>",
+      "",
+      '    <addForeignKeyConstraint baseColumnNames="shadowCreator_idInternal"',
+      '                             baseTableName="',
+    }),
+    rep(1),
+    t({
+      '"',
+      '                             constraintName="fk_',
+    }),
+    rep(1),
+    t({
+      '_shCrId"',
+      '                             deferrable="false"',
+      '                             initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION"',
+      '                             referencedColumnNames="idInternal"',
+      '                             referencedTableName="SOD_SodalisBenutzer" validate="true"/>',
+      "                             ",
+      '     <createIndex tableName="',
+    }),
+    rep(1),
+    t({
+      '" indexName="fk_',
+    }),
+    rep(1),
+    t({
+      '_shCrId">',
+      '      <column name="shadowCreator_idInternal"/>',
+      "    </createIndex>",
+      "</changeSet>",
+    }),
+  }),
+
+  snip("sod_cs_solid", "sod_cs_solid (Tabelle fuer Solid anlegen)", {
+    t('<changeSet id="'),
+    uuid(),
+    t({
+      '" author="CHANGE_TO_YOUR_OWN_NAME">',
+      '    <preConditions onFail="MARK_RAN">',
+      "      <not>",
+      '        <tableExists tableName="',
+    }),
+    i(1),
+    t({
+      '"/>',
+      "      </not>",
+      "    </preConditions>",
+      "",
+      '    <createTable tableName="',
+    }),
+    rep(1),
+    t({
+      '">',
+      '        <column autoIncrement="true" name="idInternal" type="${bigintType}">',
+      '            <constraints nullable="false" primaryKey="true" primaryKeyName="pk_',
+    }),
+    rep(1),
+    t({
+      '"/>',
+      "        </column>",
+      '        <column name="versionInternal" type="INT"/>',
+      '        <column name="lastLockedDate" type="${dateType}"/>',
+      '        <column name="lastMergedDate" type="${dateType}"/>',
+      '        <column name="importId" type="VARCHAR(255)"/>',
+      '        <column name="deleteDateInternal" type="${dateType}"/>',
+      "    </createTable>",
+      "</changeSet>",
+    }),
+  }),
+
+  snip("sod_cs_table_zuo", "sod_cs_table_zuo (Zuordnungstabelle @ManyToMany)", {
+    t('<changeSet id="'),
+    uuid(),
+    t({
+      '" author="CHANGE_TO_YOUR_OWN_NAME">',
+      '    <preConditions onFail="MARK_RAN">',
+      "      <not>",
+      '        <tableExists tableName="',
+    }),
+    i(1),
+    t({
+      '"/>',
+      "      </not>",
+      "    </preConditions>",
+      "    ",
+      '    <createTable tableName="',
+    }),
+    rep(1),
+    t({ '">', '        <column name="' }),
+    i(2),
+    t({
+      '" type="${bigintType}">',
+      '            <constraints nullable="false" primaryKey="true"/>',
+      "        </column>",
+      '        <column name="',
+    }),
+    i(3),
+    t({
+      '" type="${bigintType}">',
+      '            <constraints nullable="false" primaryKey="true"/>',
+      "        </column>",
+      "    </createTable>",
+      '    <addForeignKeyConstraint baseColumnNames="',
+    }),
+    rep(2),
+    t('" baseTableName="'),
+    rep(1),
+    t('" constraintName="'),
+    fk("fk1"),
+    t('" referencedColumnNames="'),
+    i(5),
+    t('" referencedTableName="'),
+    i(4),
+    t({ '"/>', '    <addForeignKeyConstraint baseColumnNames="' }),
+    rep(3),
+    t('" baseTableName="'),
+    rep(1),
+    t('" constraintName="'),
+    fk("fk2"),
+    t('" referencedColumnNames="'),
+    i(7),
+    t('" referencedTableName="'),
+    i(6),
+    t({
+      '"/>',
+      "    ",
+      '    <createIndex tableName="',
+    }),
+    rep(1),
+    t('" indexName="'),
+    fk("fk1"),
+    t({ '">', '      <column name="' }),
+    rep(2),
+    t({
+      '"/>',
+      "    </createIndex>",
+      '    <createIndex tableName="',
+    }),
+    rep(1),
+    t('" indexName="'),
+    fk("fk2"),
+    t({ '">', '      <column name="' }),
+    rep(3),
+    t({ '"/>', "    </createIndex>", "</changeSet>" }),
+  }),
+
+  snip("sod_fk_name", "sod_fk_name (Foreign Key Namen generieren)", {
+    t("FK_"),
+    f(function()
+      return h.fk_suffix()
+    end),
+  }),
+
+  snip("genid", "genid (UUID generieren)", uuid()),
+  snip("sod_uuid", "sod_uuid (UUID generieren)", uuid()),
 }
 
-ls.add_snippets("xml", snippets)
+ls.add_snippets("xml", snippets, { key = "colejj-liquibase" })
 ls.add_snippets("all", {
-  s("genid", f(uuid)),
-  s("sod_uuid", f(uuid)),
-})
+  snip("genid", "genid (UUID generieren)", uuid()),
+  snip("sod_uuid", "sod_uuid (UUID generieren)", uuid()),
+}, { key = "colejj-uuid-other" })

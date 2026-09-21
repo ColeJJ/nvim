@@ -33,6 +33,20 @@ local defaults = {
     database = "EntscheidungenBasis",
   },
   {
+    name = "ENT - Showroom - Entscheidungen (5452)",
+    user = "sa",
+    host = "localhost",
+    port = 5452,
+    database = "solutions",
+  },
+  {
+    name = "ENT - Showroom - Basis (5453)",
+    user = "sa",
+    host = "localhost",
+    port = 5453,
+    database = "magellan",
+  },
+  {
     name = "Guide-Client - magellan (5432)",
     user = "sa",
     host = "localhost",

@@ -55,14 +55,23 @@ return {
       vim.fn.sign_define("DapBreakpointCondition", { text = "󰯲", texthl = "DapBreakpoint", linehl = "DapBreakpoint", numhl = "DapBreakpoint" })
       vim.fn.sign_define("DapStopped", { text = "", texthl = "DapStopped", linehl = "DapStopped", numhl = "DapStopped" })
 
-      dap.listeners.after.event_initialized["dapui_config"] = function()
-        dapui.open()
+      -- DAP-UI erst beim ersten Breakpoint, nicht schon beim Launch.
+      dap.listeners.after.event_initialized["dapui_config"] = function() end
+      dap.listeners.after.event_stopped["colejj_dapui"] = function(_, body)
+        local reason = body and body.reason or ""
+        if reason == "breakpoint" or reason == "exception" then
+          dapui.open()
+        end
       end
       dap.listeners.before.event_terminated["dapui_config"] = function()
         dapui.close()
       end
       dap.listeners.before.event_exited["dapui_config"] = function()
         dapui.close()
+      end
+
+      dap.defaults.fallback.terminal_win_cmd = function()
+        return require("colejj.java.output").ensure("Debug Console")
       end
 
       -- PHP

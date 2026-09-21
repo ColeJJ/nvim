@@ -21,6 +21,15 @@ function M.fk_name()
   return "FK_" .. M.fk_suffix()
 end
 
+--- Gleicher FK-Name an mehreren Stellen einer Expansion (Constraint + Index).
+function M.fk_once(snip, key)
+  snip.colejj_fk = snip.colejj_fk or {}
+  if not snip.colejj_fk[key] then
+    snip.colejj_fk[key] = M.fk_name()
+  end
+  return snip.colejj_fk[key]
+end
+
 function M.class_name()
   local ok, utils = pcall(require, "colejj.utils")
   if ok then

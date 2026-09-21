@@ -3,6 +3,7 @@ local M = {}
 local buf
 local win
 local job
+local run_id = 0
 
 local function valid_buf()
   return buf and vim.api.nvim_buf_is_valid(buf)
@@ -12,24 +13,59 @@ local function valid_win()
   return win and vim.api.nvim_win_is_valid(win)
 end
 
-function M.ensure(title)
-  title = title or "Java Run"
-  if valid_buf() then
-    pcall(vim.api.nvim_buf_delete, buf, { force = true })
-    buf = nil
+local function string_env(env)
+  if type(env) ~= "table" then
+    return nil
   end
+  local out = {}
+  for key, value in pairs(env) do
+    if type(key) == "string" and value ~= nil then
+      out[key] = tostring(value)
+    end
+  end
+  if next(out) then
+    return out
+  end
+end
+
+function M.stop()
+  run_id = run_id + 1
+  if job and vim.fn.jobwait({ job }, 0)[1] == -1 then
+    pcall(vim.fn.jobstop, job)
+  end
+  job = nil
+end
+
+local function prepare_window(title)
+  local old_buf = valid_buf() and buf or nil
+  local old_win = valid_win() and win or nil
+
   buf = vim.api.nvim_create_buf(true, false)
   vim.bo[buf].buflisted = true
-  pcall(vim.api.nvim_buf_set_name, buf, title)
+  vim.bo[buf].bufhidden = "hide"
+  vim.bo[buf].swapfile = false
 
-  if not valid_win() then
-    vim.cmd("botright 15split")
-    win = vim.api.nvim_get_current_win()
+  if old_win then
+    pcall(vim.api.nvim_win_set_buf, old_win, buf)
+    pcall(vim.api.nvim_set_current_win, old_win)
+    win = old_win
   else
-    vim.api.nvim_set_current_win(win)
+    vim.cmd("botright vsplit")
+    win = vim.api.nvim_get_current_win()
+    vim.api.nvim_win_set_buf(win, buf)
   end
+  vim.api.nvim_set_current_win(win)
   vim.api.nvim_win_set_buf(win, buf)
-  vim.wo[win].winfixheight = true
+  vim.api.nvim_set_current_buf(buf)
+  vim.cmd("wincmd L")
+  win = vim.api.nvim_get_current_win()
+
+  if old_buf and old_buf ~= buf and vim.api.nvim_buf_is_valid(old_buf) then
+    pcall(vim.api.nvim_buf_delete, old_buf, { force = true })
+  end
+
+  pcall(vim.api.nvim_buf_set_name, buf, title or "Java Run")
+  vim.wo[win].winfixwidth = true
   vim.wo[win].number = false
   vim.wo[win].relativenumber = false
   vim.wo[win].signcolumn = "no"
@@ -43,43 +79,81 @@ function M.ensure(title)
   return buf, win
 end
 
-function M.stop()
-  if job and vim.fn.jobwait({ job }, 0)[1] == -1 then
-    pcall(vim.fn.jobstop, job)
-  end
-  job = nil
-end
-
-function M.run(opts)
-  opts = opts or {}
+local function start_job(opts, id)
   local cmd = opts.cmd
-  if type(cmd) == "table" then
-    cmd = table.concat(vim.tbl_map(vim.fn.shellescape, cmd), " ")
-  end
-  if not cmd or cmd == "" then
+  if type(cmd) ~= "table" or not cmd[1] then
+    vim.notify("Kein Start-Kommando", vim.log.levels.ERROR, { title = "colejj.java" })
     return
   end
 
-  M.stop()
-  M.ensure(opts.title or "Java Run")
-  vim.bo[buf].modifiable = true
+  prepare_window(opts.title or "Java Run")
+  local term_buf = buf
+  local finished = false
 
-  job = vim.fn.termopen(cmd, {
-    cwd = opts.cwd,
-    env = opts.env,
-    on_exit = function(_, code)
+  local function finish(code)
+    if finished or id ~= run_id then
+      return
+    end
+    finished = true
+    if opts.on_exit then
+      opts.on_exit(tonumber(code) or code or 0)
+    end
+  end
+
+  -- jobstart({term=true}) ruft on_exit unter 0.12 oft nicht auf.
+  -- TermClose ist für Terminal-Jobs der verlässliche Hook.
+  vim.api.nvim_create_autocmd("TermClose", {
+    buffer = term_buf,
+    once = true,
+    callback = function()
+      local code = vim.v.event and vim.v.event.status or 0
       vim.schedule(function()
-        if opts.on_exit then
-          opts.on_exit(code)
-        end
+        finish(code)
       end)
     end,
   })
 
-  if valid_win() then
-    vim.cmd("normal! G")
+  local job_opts = {
+    cwd = opts.cwd,
+    term = true,
+    on_exit = function(_, code)
+      vim.schedule(function()
+        finish(code)
+      end)
+    end,
+  }
+  local env = string_env(opts.env)
+  if env then
+    job_opts.env = env
   end
-  return job
+
+  job = vim.fn.jobstart(cmd, job_opts)
+  if type(job) ~= "number" or job <= 0 then
+    vim.notify(
+      "Start fehlgeschlagen (jobstart=" .. tostring(job) .. ")",
+      vim.log.levels.ERROR,
+      { title = "colejj.java" }
+    )
+    job = nil
+    finish(1)
+    return
+  end
+end
+
+function M.ensure(title)
+  return prepare_window(title)
+end
+
+function M.run(opts)
+  opts = opts or {}
+  M.stop()
+  local id = run_id
+  vim.defer_fn(function()
+    if id ~= run_id then
+      return
+    end
+    start_job(opts, id)
+  end, 40)
 end
 
 function M.job()
@@ -88,6 +162,10 @@ end
 
 function M.buf()
   return buf
+end
+
+function M.win()
+  return win
 end
 
 return M

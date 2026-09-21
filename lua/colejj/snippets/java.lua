@@ -172,6 +172,60 @@ ls.add_snippets("java", {
     end, { 1 }),
     t("();"),
   }),
+  s("poserconf", {
+    t({
+      "@Import({EntDbConfig.class, DefaultSodalisBeanConfiguration.class})",
+      "public static class ",
+    }),
+    i(1, "Type"),
+    t({
+      "ImplITConfiguration {",
+      "",
+      "  @Bean",
+      "  public ",
+    }),
+    f(function(args)
+      return args[1][1]
+    end, { 1 }),
+    t({ " sut() {", "    return new " }),
+    f(function(args)
+      return args[1][1]
+    end, { 1 }),
+    t({ "Impl();", "  }", "  " }),
+    i(0),
+    t({ "", "}" }),
+  }),
+  s("std", {
+    t({
+      "@Test",
+      '@TestDefinition(module = ENT, key = CAT + "',
+    }),
+    i(1),
+    t({ '", name = "' }),
+    i(2),
+    t({
+      '",',
+      "      author = STH, datacontext = PVM) ",
+      '@TestDescription("',
+    }),
+    i(3),
+    t({
+      '")',
+      '@TestResultExpectation("',
+    }),
+    i(4),
+    t({
+      '")',
+      '@TestResultCriteria("")',
+      "public void std",
+    }),
+    f(function(args)
+      return args[1][1]
+    end, { 1 }),
+    t({ "() {", "  assureMitarbeiterIsSelected(Mitarbeiter.ZENTRAL);", "  ", "  " }),
+    i(0),
+    t({ "", "}" }),
+  }),
   s("timeTravel", t("@org.junit.Rule public de.guidecom.sodalis.commons.infrastructure.TimeTravel timeTravel = new TimeTravel();")),
   s("funcpriv", { t("private "), i(1, "void"), t(" "), i(2, "name"), t({ "() {", "", "}" }) }),
   s("funcpub", { t("public "), i(1, "void"), t(" "), i(2, "name"), t({ "() {", "", "}" }) }),

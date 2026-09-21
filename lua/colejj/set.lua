@@ -1,6 +1,15 @@
 vim.g.mapleader = " "
 vim.g.maplocalleader = " "
 
+-- Neovim 0.12: Plugins (nvim-dap, nvim-jdtls, colorizer, …) rufen noch
+-- vim.tbl_flatten auf. Ohne Shim erscheint die Deprecation-Warnung beim Start.
+if vim.fn.has("nvim-0.12") == 1 then
+  ---@diagnostic disable-next-line: duplicate-set-field
+  vim.tbl_flatten = function(t)
+    return vim.iter(t):flatten(math.huge):totable()
+  end
+end
+
 vim.g.loaded_netrw = 1
 vim.g.loaded_netrwPlugin = 1
 

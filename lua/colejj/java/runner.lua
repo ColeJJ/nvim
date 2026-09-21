@@ -69,20 +69,67 @@ local function maven_args(extra)
   return args
 end
 
+local function argv_shell(argv)
+  local parts = {}
+  for _, arg in ipairs(argv) do
+    parts[#parts + 1] = vim.fn.shellescape(arg)
+  end
+  return table.concat(parts, " ")
+end
+
+local function mvn_cmd(root, extra)
+  local cmd = { project.maven_cmd(root) }
+  vim.list_extend(cmd, maven_args(extra))
+  return cmd
+end
+
+local function compile_cmd(cfg)
+  local root = project.reactor_root()
+  local module = cfg.module or select(1, project.maven_module()) or "."
+  return mvn_cmd(root, { "-pl", module, "-am", "-Dmaven.test.skip=true", "compile" }), root, module
+end
+
+local function exec_cmd(cfg, debug, from_module_dir)
+  local root = project.reactor_root()
+  local extra_env = {}
+  for key, value in pairs(cfg.envs or {}) do
+    extra_env[key] = tostring(value)
+  end
+  local vm = vim.trim(cfg.vmargs or "")
+  if debug then
+    vm = (vm ~= "" and (vm .. " ") or "")
+      .. "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
+  end
+  if vm ~= "" then
+    extra_env.MAVEN_OPTS = vm
+  end
+  local scope = cfg.include_provided == false and "runtime" or "compile"
+  local extra = {
+    "exec:java",
+    "-Dexec.mainClass=" .. (cfg.main or ""),
+    "-Dexec.classpathScope=" .. scope,
+    "-Dexec.cleanupDaemonThreads=false",
+  }
+  if not from_module_dir then
+    local module = cfg.module or select(1, project.maven_module()) or "."
+    table.insert(extra, 1, module)
+    table.insert(extra, 1, "-pl")
+  end
+  if cfg.args and cfg.args ~= "" then
+    extra[#extra + 1] = "-Dexec.args=" .. cfg.args
+  end
+  return mvn_cmd(root, extra), root, extra_env
+end
+
 local function run_maven(cwd, args, title, on_exit)
-  local cmd = { project.maven_cmd(cwd) }
-  vim.list_extend(cmd, args)
   output.run({
-    cmd = cmd,
+    cmd = mvn_cmd(cwd, args),
     cwd = cwd,
     title = title or "Maven",
-    on_exit = function(code)
+    on_exit = on_exit and function(code)
       code = tonumber(code) or code
       if code ~= 0 then
         vim.notify("Build fehlgeschlagen — Start abgebrochen", vim.log.levels.ERROR, { title = "colejj.java" })
-        return
-      end
-      if not on_exit then
         return
       end
       local ok, err = pcall(on_exit)
@@ -91,13 +138,6 @@ local function run_maven(cwd, args, title, on_exit)
       end
     end,
   })
-end
-
-local function open_dap_ui()
-  local ok, dapui = pcall(require, "dapui")
-  if ok then
-    dapui.open()
-  end
 end
 
 local function launch_dap(cfg, debug)
@@ -133,17 +173,11 @@ local function launch_dap(cfg, debug)
     start_mvn(cfg, debug)
     return
   end
-  vim.defer_fn(open_dap_ui, 200)
 end
 
 local function start_after_build(cfg, debug)
   vim.notify("Build OK — starte " .. (cfg.name or "Run-Config"), vim.log.levels.INFO, { title = "colejj.java" })
-  if debug then
-    launch_dap(cfg, true)
-  else
-    -- Run: App-Logs im selben unteren Fenster, wie IntelliJs Run-Tool-Window
-    start_mvn(cfg, false)
-  end
+  launch_dap(cfg, true)
 end
 
 local function maybe_build(cfg, after)
@@ -158,28 +192,40 @@ local function maybe_build(cfg, after)
 end
 
 start_mvn = function(cfg, debug)
-  local root = project.reactor_root()
   local wd = idea.expand_wd(cfg)
-  local env = vim.tbl_extend("force", vim.fn.environ(), cfg.envs or {})
-  local vm = cfg.vmargs or ""
-  if debug then
-    vm = vm .. " -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
+  local root = project.reactor_root()
+  local root_abs = vim.fn.fnamemodify(root, ":p"):gsub("/$", "")
+  local from_module = wd ~= root_abs
+  local exec, _, extra_env = exec_cmd(cfg, debug, from_module)
+  local title = (debug and "Debug: " or "Run: ") .. (cfg.name or "mvn")
+  compat.sync_extra_classpath(wd)
+  if M.build_before_run and not debug then
+    local compile = compile_cmd(cfg)
+    output.run({
+      cmd = {
+        "sh",
+        "-c",
+        "cd "
+          .. vim.fn.shellescape(root)
+          .. " && "
+          .. argv_shell(compile)
+          .. " && cd "
+          .. vim.fn.shellescape(wd)
+          .. " && "
+          .. argv_shell(exec),
+      },
+      cwd = root,
+      env = extra_env,
+      title = title,
+    })
+  else
+    output.run({
+      cmd = exec,
+      cwd = wd,
+      env = extra_env,
+      title = title,
+    })
   end
-  env.MAVEN_OPTS = vm
-  local args = maven_args({
-    "compile",
-    "exec:java",
-    "-Dexec.mainClass=" .. (cfg.main or ""),
-    "-Dexec.classpathScope=compile",
-  })
-  local cmd = { project.maven_cmd(wd or root) }
-  vim.list_extend(cmd, args)
-  output.run({
-    cmd = cmd,
-    cwd = wd or root,
-    env = env,
-    title = (debug and "Debug: " or "Run: ") .. (cfg.name or "mvn"),
-  })
   if debug then
     vim.notify("JDWP auf :5005 — mit <leader>da andocken", vim.log.levels.INFO, { title = "colejj.java" })
   end
@@ -194,9 +240,13 @@ function M.run_config()
       end
       local debug = action == "Debug"
       remember(debug and "dap" or "mvn", cfg, debug)
-      maybe_build(cfg, function()
-        start_after_build(cfg, debug)
-      end)
+      if debug then
+        maybe_build(cfg, function()
+          start_after_build(cfg, true)
+        end)
+      else
+        start_mvn(cfg, false)
+      end
     end)
   end)
 end
@@ -235,7 +285,6 @@ function M.attach()
     hostName = "localhost",
     port = 5005,
   })
-  vim.defer_fn(open_dap_ui, 200)
 end
 
 function M.stop()

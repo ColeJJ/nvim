@@ -9,7 +9,7 @@ return {
   },
   {
     "tjdevries/colorbuddy.nvim",
-    lazy = true,
+    lazy = false,
   },
   {
     "norcalli/nvim-colorizer.lua",
@@ -34,7 +34,15 @@ return {
     "nvim-lualine/lualine.nvim",
     event = "VeryLazy",
     config = function(_, opts)
-      opts.options.theme = vim.g.custom_obsidian_lualine or "auto"
+      if vim.g.colors_name == "tj" then
+        opts.options.theme = vim.g.tj_lualine or "auto"
+      elseif vim.g.colors_name == "custom-obsidian" then
+        opts.options.theme = vim.g.custom_obsidian_lualine or "auto"
+      elseif vim.g.colors_name == "material-deep-ocean" then
+        opts.options.theme = vim.g.material_deep_ocean_lualine or "auto"
+      else
+        opts.options.theme = "auto"
+      end
       require("lualine").setup(opts)
     end,
     opts = {
@@ -92,7 +100,11 @@ return {
         show_on_dirs = true,
       },
       view = { adaptive_size = true },
-      filters = { dotfiles = false },
+      filters = {
+        dotfiles = false,
+        -- git_ignored bleibt an (kein target/, node_modules/); SQL trotzdem zeigen
+        exclude = { "%.sql$" },
+      },
     },
   },
   {
@@ -104,6 +116,8 @@ return {
         { "<leader>bl", desc = "Buffer-Liste" },
         { "<leader>c", group = "code" },
         { "<leader>cf", desc = "Format (IntelliJ-Profil)" },
+        { "<leader>ce", desc = "Nächster Fehler" },
+        { "<leader>cw", desc = "Nächste Warnung" },
         { "<leader>cn", desc = "Nächste Methode/Klasse" },
         { "<leader>cN", desc = "Vorherige Methode/Klasse" },
         { "<leader>fm", desc = "Methode im Projekt finden" },
@@ -115,16 +129,29 @@ return {
         { "[w", desc = "Vorherige Warnung" },
         { "<leader>d", group = "debug" },
         { "<leader>f", group = "finden" },
+        { "<leader>fs", desc = "Datei speichern" },
         { "<leader>ff", desc = "Dateien im Projekt" },
+        { "<leader><leader>", desc = "Dateien im Projekt" },
         { "<leader>fF", desc = "Klasse inkl. Dependencies" },
+        { "<leader>fd", desc = "Verzeichnis im Projekt" },
+        { "<leader>f.", desc = "Dired (aktueller Ordner)" },
         { "<leader>ft", desc = "DB-Tabelle finden" },
         { "<leader>fT", desc = "tmux-Fenster" },
+        { "<leader>fu", desc = "Ungespeicherte Dateien" },
+        { "<leader>fx", desc = "Diagnosen" },
         { "<leader>g", group = "git" },
         { "<leader>gb", desc = "Inline-Blame (Heatmap)" },
         { "<leader>gB", desc = "Blame der aktuellen Zeile" },
+        { "<leader>gd", desc = "Datei-Diff vs HEAD" },
+        { "<leader>gD", desc = "Datei-Diff vs Abzweigpunkt" },
         { "<leader>h", group = "harpoon" },
         { "<leader>T", desc = "Theme wählen" },
+        { "<leader>C", desc = "Cursor-Stil umschalten" },
         { "<leader>j", group = "java" },
+        { "<leader>jn", desc = "Neuer Typ" },
+        { "<leader>jr", desc = "JDT.LS neu starten" },
+        { "<leader>jW", desc = "JDT.LS Workspace reset" },
+        { "<leader>n", desc = "Alle gleichen Stellen (Multicursor)" },
         { "<leader>m", group = "maven" },
         { "<leader>r", group = "run" },
         { "<leader>rt", group = "tests" },
@@ -141,7 +168,7 @@ return {
         { "<leader>sC", desc = "Symbolsuche (LSP)" },
         { "<leader>sa", desc = "Klasse inkl. Dependencies" },
         { "<leader>sp", desc = "Suche im Projekt" },
-        { "<leader>sF", desc = "Suche literal" },
+        { "<leader>sF", desc = "Suche Regex" },
         { "<leader>sP", desc = "Suche Latin-1" },
         { "<leader>ss", desc = "Suche im Buffer" },
         { "<leader>sw", desc = "Wort in dieser Datei" },
@@ -149,13 +176,17 @@ return {
         { "<leader>tc", desc = "DB-Spalte finden" },
         { "<leader>tw", desc = "DB-WHERE-Filter" },
         { "<leader>o", group = "öffnen" },
-        { "<leader>oc", desc = "LazyDocker" },
+        { "<leader>ob", desc = "Im Standard-Browser öffnen" },
+        { "<leader>oc", desc = "Docker Compose / LazyDocker" },
         { "<leader>od", desc = "Datenbank-Viewer" },
         { "<leader>w", group = "fenster" },
         { "<leader>wh", desc = "Fenster links" },
         { "<leader>wj", desc = "Fenster unten" },
         { "<leader>wk", desc = "Fenster oben" },
         { "<leader>wl", desc = "Fenster rechts" },
+        { "<leader>wq", desc = "Fenster schließen" },
+        { "<leader>wv", desc = "Fenster vertikal splitten" },
+        { "<leader>wV", desc = "Fenster horizontal splitten" },
       },
     },
   },

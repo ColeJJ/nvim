@@ -1,100 +1,118 @@
-require('colorizer').setup()
-require("colorbuddy").setup()
+-- TJ Devries: `colorscheme gruvbuddy`
+-- https://github.com/tjdevries/config.nvim → colorbuddy.nvim colors/gruvbuddy.lua
+-- plus die Default-Gruppen aus colorbuddy/plugins/init.lua
 
-local Color = require("colorbuddy.color").Color
-local c = require("colorbuddy.color").colors
-local Group = require("colorbuddy.group").Group
-local g = require("colorbuddy.group").groups
-local s = require("colorbuddy.style").styles
+local M = {}
 
--- colors
-Color.new('white',     '#f2e5bc')
-Color.new('superwhite', '#E0E0E0')
-Color.new('red',       '#cc6666')
-Color.new('pink',      '#fef601')
-Color.new('green',     '#99cc99')
-Color.new('yellow',    '#f8fe7a')
-Color.new('blue',      '#81a2be')
-Color.new('aqua',      '#8ec07c')
-Color.new('cyan',      '#8abeb7')
-Color.new('purple',    '#8e6fbd')
-Color.new('violet',    '#b294bb')
-Color.new('orange',    '#de935f')
-Color.new('brown',     '#a3685a')
-Color.new('seagreen',  '#698b69')
-Color.new('turquoise', '#698b69')
-Color.new("background", '#0F111A')
-Color.new("superwhite", "#E0E0E0")
-Color.new("softwhite", "#ebdbb2")
-Color.new("teal", "#018080")
+local function ensure_colorbuddy()
+  pcall(function()
+    require("lazy").load({ plugins = { "colorbuddy.nvim" } })
+  end)
+end
 
-Group.new("WinSeparator", nil, nil)
+function M.apply()
+  ensure_colorbuddy()
 
--- Vim Editor
-Group.new("Normal", c.superwhite, c.background)
-Group.new("LineNr", c.gray3, c.background)
-Group.new("EndOfBuffer", c.gray3)
-Group.new("SignColumn", c.gray3, c.background)
+  vim.cmd("hi clear")
+  if vim.fn.exists("syntax_on") == 1 then
+    vim.cmd("syntax reset")
+  end
 
--- this here makes the popup orange
--- Group.new("NormalFloat", g.normal.fg:light(), g.normal.bg:dark())
--- Group.new("FloatBorder", c.gray0:light(), g.NormalFloat)
+  local colorbuddy = require("colorbuddy")
+  -- Defaults zuerst; 'background' nur hier setzen, nicht danach
+  -- (sonst setzt Neovim NonText/EndOfBuffer wieder auf Standard-Blau).
+  colorbuddy.colorscheme("tj")
 
--- Popup Menu
-Group.new("PMenu", c.gray4, c.background)
-Group.new("PMenuSel", c.gray0, c.yellow:light())
-Group.new("PMenuSbar", c.none, c.gray0)
-Group.new("PMenuThumb", c.none, c.gray4)
+  local Color = colorbuddy.Color
+  local Group = colorbuddy.Group
+  local c = colorbuddy.colors
+  local g = colorbuddy.groups
+  local s = colorbuddy.styles
 
--- Tabline
-Group.new("TabLineFill", c.softwhite, c.gray3, s.none)
+  Color.new("white", "#f2e5bc")
+  Color.new("red", "#cc6666")
+  Color.new("pink", "#fef601")
+  Color.new("green", "#99cc99")
+  Color.new("yellow", "#f8fe7a")
+  Color.new("blue", "#81a2be")
+  Color.new("aqua", "#8ec07c")
+  Color.new("cyan", "#8abeb7")
+  Color.new("purple", "#8e6fbd")
+  Color.new("violet", "#b294bb")
+  Color.new("orange", "#de935f")
+  Color.new("brown", "#a3685a")
+  Color.new("seagreen", "#698b69")
+  Color.new("turquoise", "#698b69")
 
--- Statusline Colors
-Group.new("StatusLine", c.gray2, c.blue, nil)
-Group.new("StatusLineNC", c.gray3, c.gray1:light())
-Group.new("CommandMode", c.gray7, c.green, s.bold)
-Group.new("NormalMode", c.gray7, c.red, s.bold)
-Group.new("InsertMode", c.gray7, c.yellow, s.bold)
-Group.new("ReplaceMode", c.gray7, c.yellow, s.bold + s.underline)
-Group.new("TerminalMode", c.gray7, c.turquoise, s.bold)
-Group.new("HelpDoc", c.gray7, c.turquoise, s.bold + s.italic)
-Group.new("HelpIgnore", c.green, nil, s.bold + s.italic)
-Group.new("Visual", nil, c.blue:dark(0.3))
-Group.new("VisualMode", g.Visual, g.Visual)
-Group.new("VisualLineMode", g.Visual, g.Visual)
+  local background_string = "#111111"
+  Color.new("background", background_string)
+  Color.new("gray0", background_string)
 
--- Function
-Group.new("functionCall", c.yellow, c.none, s.bold)
-Group.new("Function", c.yellow, c.none, s.bold)
+  Group.new("Normal", c.superwhite, c.gray0)
+  Group.new("NormalNC", c.superwhite, c.gray0)
+  Group.new("EndOfBuffer", c.gray0, c.gray0)
+  Group.new("NonText", c.gray3, c.gray0)
+  Group.new("MsgArea", c.superwhite, c.gray0)
+  Group.new("WinBar", c.superwhite, c.gray0)
+  Group.new("WinBarNC", c.gray3, c.gray0)
+  Group.new("SignColumn", g.LineNr.fg, c.gray0)
+  Group.new("LineNr", c.gray1, c.gray0)
 
--- Special Characters
-Group.new("Special", c.purple:light(), nil, s.bold)
+  Group.new("@constant", c.orange, nil, s.none)
+  Group.new("@function", c.yellow, nil, s.none)
+  Group.new("@function.bracket", g.Normal, g.Normal)
+  Group.new("@keyword", c.violet, nil, s.none)
+  Group.new("@keyword.faded", g.nontext.fg:light(), nil, s.none)
+  Group.new("@property", c.blue)
+  Group.new("@variable", c.superwhite, nil)
+  Group.new("@variable.builtin", c.purple:light():light(), g.Normal)
+  Group.new("@function.call.lua", c.blue:dark(), nil, nil)
 
--- Standard syntax
-Group.new("Boolean", c.orange)
-Group.new("Comment", c.gray3:light(), c.none, s.italic)
-Group.new("Character", c.red)
-Group.new("Conditional", c.red)
-Group.new("Define", c.cyan)
-Group.new("Error", c.red:light(), nil, s.bold)
-Group.new("Number", c.red)
-Group.new("Float", g.Number, g.Number, g.Number)
-Group.new("Constant", c.orange, nil, s.bold)
-Group.new("Identifier", c.red, nil, s.bold)
-Group.new("Include", c.cyan)
-Group.new("Keyword", c.violet)
-Group.new("Operator", c.red:light():light())
-Group.new("String", c.green)
-Group.new("Structure", c.violet)
-Group.new("Typedef", c.yellow)
-Group.new("Type", c.violet, nil, s.italic)
-Group.new("@variable", c.superwhite, nil)
-Group.new("@variable.builtin", c.purple:light():light(), nil)
+  vim.cmd([[
+    hi link @function.call @function
+    hi link @function.method @function
+    hi link @function.method.call @function
+    hi link @lsp.type.variable @variable
+    hi link @lsp.type.property @property
+    hi link @lsp.type.function @function
+    hi link @lsp.type.method @function
+    hi link @lsp.type.keyword @keyword
+    hi link @lsp.type.namespace @module
+  ]])
 
-vim.cmd([[
-    hi link @lsp.type.variable variable 
-    hi link @function.call functionCall
-    hi link @lsp.type.namespace @namespace
-    hi link @punctuation.bracket.rapper @text.literal
-    hi link @normal Normal
-]])
+  vim.o.termguicolors = true
+  vim.g.colors_name = "tj"
+
+  local bg = background_string
+  local fg = "#E0E0E0"
+  vim.api.nvim_set_hl(0, "Normal", { fg = fg, bg = bg })
+  vim.api.nvim_set_hl(0, "NormalNC", { fg = fg, bg = bg })
+  vim.api.nvim_set_hl(0, "EndOfBuffer", { fg = bg, bg = bg })
+  vim.api.nvim_set_hl(0, "NonText", { fg = "#333333", bg = bg })
+  vim.api.nvim_set_hl(0, "MsgArea", { fg = fg, bg = bg })
+  vim.api.nvim_set_hl(0, "WinBar", { fg = fg, bg = bg })
+  vim.api.nvim_set_hl(0, "WinBarNC", { fg = "#555555", bg = bg })
+  vim.api.nvim_set_hl(0, "SignColumn", { fg = "#555555", bg = bg })
+  vim.api.nvim_set_hl(0, "TabLine", { fg = "#5c5c5c", bg = bg })
+  vim.api.nvim_set_hl(0, "TabLineSel", { fg = "#c8c8c8", bg = "#1c1c1c" })
+  vim.api.nvim_set_hl(0, "TabLineFill", { fg = "#5c5c5c", bg = bg })
+
+  vim.g.tj_lualine = {
+    normal = {
+      a = { fg = bg, bg = "#81a2be", gui = "bold" },
+      b = { fg = fg, bg = "#2a2a2a" },
+      c = { fg = "#888888", bg = bg },
+    },
+    insert = { a = { fg = bg, bg = "#f8fe7a", gui = "bold" } },
+    visual = { a = { fg = bg, bg = "#8e6fbd", gui = "bold" } },
+    replace = { a = { fg = bg, bg = "#cc6666", gui = "bold" } },
+    command = { a = { fg = bg, bg = "#99cc99", gui = "bold" } },
+    inactive = {
+      a = { fg = "#555555", bg = "#1a1a1a" },
+      b = { fg = "#555555", bg = "#1a1a1a" },
+      c = { fg = "#555555", bg = bg },
+    },
+  }
+end
+
+return M

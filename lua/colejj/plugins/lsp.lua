@@ -7,12 +7,18 @@ return {
   {
     "williamboman/mason-lspconfig.nvim",
     dependencies = { "williamboman/mason.nvim", "neovim/nvim-lspconfig" },
-    opts = {
-      ensure_installed = { "lua_ls", "gopls" },
-      automatic_enable = {
-        exclude = { "jdtls" },
-      },
-    },
+    opts = function()
+      local ensure = { "lua_ls" }
+      if vim.fn.executable("go") == 1 then
+        ensure[#ensure + 1] = "gopls"
+      end
+      return {
+        ensure_installed = ensure,
+        automatic_enable = {
+          exclude = { "jdtls" },
+        },
+      }
+    end,
   },
   {
     "WhoIsSethDaniel/mason-tool-installer.nvim",
@@ -68,7 +74,11 @@ return {
         },
       })
 
-      vim.lsp.enable({ "lua_ls", "gopls" })
+      local servers = { "lua_ls" }
+      if vim.fn.executable("go") == 1 or vim.fn.executable("gopls") == 1 then
+        servers[#servers + 1] = "gopls"
+      end
+      vim.lsp.enable(servers)
 
       vim.api.nvim_create_autocmd("LspAttach", {
         group = vim.api.nvim_create_augroup("colejj-lsp", { clear = true }),
@@ -100,9 +110,13 @@ return {
               end,
             })
           end, "Referenzen")
-          map("n", "gn", vim.lsp.buf.rename, "Umbenennen")
+          map("n", "gn", function()
+            require("colejj.java.lsp").rename()
+          end, "Umbenennen")
           map({ "n", "v" }, "<leader>ca", vim.lsp.buf.code_action, "Code Action")
-          map("n", "<leader>cr", vim.lsp.buf.rename, "Rename")
+          map("n", "<leader>cr", function()
+            require("colejj.java.lsp").rename()
+          end, "Rename")
           map("n", "<leader>cs", vim.lsp.buf.document_symbol, "Datei-Symbole")
         end,
       })
