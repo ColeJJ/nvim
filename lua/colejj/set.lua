@@ -26,6 +26,7 @@ vim.opt.scrolloff = 8
 vim.opt.colorcolumn = ""
 vim.opt.signcolumn = "yes"
 vim.opt.termguicolors = true
+vim.opt.guifont = "JetBrainsMono Nerd Font:h15"
 vim.opt.cursorline = true
 vim.opt.updatetime = 250
 vim.opt.splitright = true
@@ -39,11 +40,21 @@ vim.opt.autoindent = true
 vim.opt.smartindent = true
 
 vim.api.nvim_create_autocmd("FileType", {
-  pattern = { "java", "kotlin" },
+  pattern = { "java", "kotlin", "xml" },
   callback = function()
     vim.opt_local.tabstop = 2
     vim.opt_local.softtabstop = 2
     vim.opt_local.shiftwidth = 2
+    vim.opt_local.expandtab = true
+  end,
+})
+
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = "xml",
+  callback = function()
+    -- `<` würde mit smartindent aus der Einrückung rutschen.
+    -- Kinder-Tags kommen aus indentexpr bzw. LemMinX.
+    vim.opt_local.smartindent = false
   end,
 })
 

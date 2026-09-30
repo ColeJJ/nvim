@@ -12,7 +12,7 @@ der Doom-Emacs-Konfiguration.
 - JDK **21** für JDT.LS, projektbezogen zusätzlich JDK **17**
 - `git`, `fd`, `ripgrep`, `make`
 - Maven (`mvn` oder `./mvnw`) bzw. Gradle-Wrapper
-- Optional: `lazygit`, `lazydocker`, `delta`, Node für PHP/JS-Debugger, `psql` (`libpq`) für die Datenbank-UI
+- Optional: `lazygit`, `lazydocker`, `podman` (Compose-Provider: `docker-compose` oder `podman-compose`), `delta`, Node für PHP/JS-Debugger, `psql` (`libpq`) für die Datenbank-UI
 
 JDK-Suche (ohne hart codierte Einzelpfade):
 
@@ -156,7 +156,8 @@ Pfeiltasten nach `SPC w` schieben die Größe.
 | Taste | Aktion |
 | --- | --- |
 | `ob` | aktuelle Datei im Standard-Browser öffnen (wie Doom `SPC o b`) |
-| `oc` | LazyDocker: Container, Compose, Logs (wie LazyGit, Theme in `lazydocker.yml`) |
+| `oc` | Compose-Picker, dann LazyDocker für den gewählten Stack (`lazydocker.yml`) |
+| `oC` | LazyDocker direkt: alle Container, Images, Volumes |
 | `od` | DB-Viewer: Verbindungen, Schemas, Tabellen und paginierte Daten |
 
 ### Datenbank
@@ -176,6 +177,8 @@ Postgres-Viewer über DBee; SQL-Dateien über Dadbod. Details:
 | Taste | Aktion |
 | --- | --- |
 | `gg` / `gs` | LazyGit / aktuelle Datei |
+| `gm` | GitLab-MRs: Übersicht, Diff, Kommentare, Approve ([docs/review.md](docs/review.md)) |
+| `fc` | Commit suchen; Enter öffnet Details im vertikalen Buffer (`q` zu, `c` Checkout) |
 | `gb` | Inline-Blame |
 | `gd` / `gD` | Datei-Diff vs HEAD / vs Abzweigpunkt (readonly, `e` sprung, `d` verwerfen) |
 | `gh` | Datei-Historie |

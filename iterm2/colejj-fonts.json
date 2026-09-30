@@ -1,0 +1,11 @@
+{
+  "Profiles": [
+    {
+      "Name": "Default",
+      "Guid": "D1E59407-8FAA-42BC-BA50-4FD8F4AF5C3A",
+      "Normal Font": "JetBrainsMonoNF-Regular 15",
+      "Non Ascii Font": "JetBrainsMonoNF-Regular 15",
+      "Use Non-ASCII Font": false
+    }
+  ]
+}

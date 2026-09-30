@@ -18,6 +18,13 @@ return {
         desc = "Dired (aktueller Ordner)",
       },
       {
+        "<leader>oe",
+        function()
+          require("colejj.find").open_dired()
+        end,
+        desc = "Dired (Verzeichnis dieser Datei)",
+      },
+      {
         "-",
         function()
           require("oil").open()

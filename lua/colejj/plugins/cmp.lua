@@ -174,6 +174,16 @@ return {
         sources = cmp.config.sources(snippet_first),
       })
 
+      cmp.setup.filetype("markdown", {
+        sources = cmp.config.sources({
+          { name = "luasnip", keyword_length = 1 },
+          { name = "nvim_lsp" },
+          { name = "path" },
+          { name = "emoji" },
+          { name = "buffer" },
+        }),
+      })
+
       cmp.setup.filetype({ "sql", "mysql", "plsql" }, {
         sources = cmp.config.sources({
           { name = "vim-dadbod-completion" },

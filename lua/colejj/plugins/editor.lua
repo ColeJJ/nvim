@@ -20,6 +20,14 @@ return {
           "properties",
           "json",
           "sql",
+          "markdown",
+          "markdown_inline",
+          "bash",
+          "python",
+          "html",
+          "css",
+          "toml",
+          "diff",
         },
         sync_install = false,
         auto_install = true,
@@ -82,6 +90,57 @@ return {
       })
       require("colejj.treesitter_compat").setup()
     end,
+  },
+  {
+    "MeanderingProgrammer/render-markdown.nvim",
+    ft = { "markdown" },
+    dependencies = { "nvim-treesitter/nvim-treesitter", "nvim-tree/nvim-web-devicons" },
+    opts = {
+      -- Gerendert bleibt auch im Insert-Modus. Roh-Markdown nur auf der
+      -- aktuellen Zeile, und nur solange man tippt.
+      render_modes = { "n", "i", "c", "t", "v", "V", "\22" },
+      anti_conceal = {
+        enabled = true,
+        disabled_modes = { "n", "v", "V", "\22" },
+        above = 0,
+        below = 0,
+      },
+      win_options = {
+        concealcursor = {
+          rendered = "nvc",
+        },
+      },
+      completions = {
+        lsp = { enabled = true },
+      },
+      code = {
+        sign = false,
+        width = "block",
+        language_pad = 1,
+      },
+      checkbox = {
+        unchecked = {
+          icon = "[ ] ",
+          highlight = "DiagnosticInfo",
+        },
+        checked = {
+          icon = "[x] ",
+          highlight = "DiagnosticOk",
+        },
+        custom = {
+          blocked = {
+            raw = "[B]",
+            rendered = "[B] ",
+            highlight = "DiagnosticWarn",
+          },
+          important = {
+            raw = "[!]",
+            rendered = "[!] ",
+            highlight = "DiagnosticError",
+          },
+        },
+      },
+    },
   },
   {
     "theprimeagen/harpoon",

@@ -30,6 +30,195 @@ local SKIP = {
   "override.template",
 }
 
+local EXTRA_PATHS = {
+  "/opt/podman/bin",
+  "/opt/homebrew/bin",
+  "/usr/local/bin",
+}
+
+local function has_bin(name)
+  return vim.fn.executable(name) == 1
+end
+
+local function resolve_bin(names)
+  for _, name in ipairs(names) do
+    if name:find("/", 1, true) then
+      if vim.uv.fs_stat(name) then
+        return name
+      end
+    elseif has_bin(name) then
+      return name
+    end
+  end
+end
+
+local function podman_bin()
+  return resolve_bin({
+    "podman",
+    "/opt/podman/bin/podman",
+    "/opt/homebrew/bin/podman",
+    "/usr/local/bin/podman",
+  })
+end
+
+local function docker_bin()
+  return resolve_bin({
+    "docker",
+    "/usr/local/bin/docker",
+    "/opt/homebrew/bin/docker",
+  })
+end
+
+local function notify_title()
+  return podman_bin() and "Podman" or "Docker"
+end
+
+--- Compose-CLI: Podman bevorzugt, Docker als Fallback.
+local function compose_argv()
+  local podman = podman_bin()
+  if podman then
+    return { podman, "compose" }
+  end
+  local docker = docker_bin()
+  if docker then
+    return { docker, "compose" }
+  end
+end
+
+local function compose_provider()
+  return resolve_bin({
+    "docker-compose",
+    "podman-compose",
+    "/opt/homebrew/bin/docker-compose",
+    "/opt/homebrew/bin/podman-compose",
+    "/usr/local/bin/docker-compose",
+    "/usr/local/bin/podman-compose",
+  })
+end
+
+local function strip_unix(path)
+  return (path or ""):gsub("^unix://", "")
+end
+
+local function socket_path_ok(path)
+  path = strip_unix(path)
+  return path ~= "" and vim.uv.fs_stat(path) ~= nil
+end
+
+local function inspect_machine_socket()
+  local bin = podman_bin()
+  if not bin then
+    return nil
+  end
+  local result = vim.system({
+    bin,
+    "machine",
+    "inspect",
+    "--format",
+    "{{.ConnectionInfo.PodmanSocket.Path}}",
+    "podman-machine-default",
+  }, { text = true, timeout = 2500 }):wait()
+  if result.code ~= 0 then
+    return nil
+  end
+  local path = vim.trim(result.stdout or "")
+  path = path:match("^[^\r\n]+") or path
+  if path ~= "" and path ~= "[]" then
+    return strip_unix(path)
+  end
+end
+
+local function runtime_dir()
+  local from_env = os.getenv("XDG_RUNTIME_DIR")
+  if from_env and from_env ~= "" then
+    return from_env
+  end
+  local passwd = vim.uv.os_get_passwd()
+  local uid = passwd and passwd.uid
+  if uid then
+    return "/run/user/" .. tostring(uid)
+  end
+end
+
+--- Docker-kompatibler REST-Socket (macOS: Machine-API über den stabilen Symlink).
+local function podman_socket()
+  local runtime = runtime_dir()
+  local runtime_sock = runtime and (runtime .. "/podman/podman.sock")
+  local home_sock = vim.fn.expand("~/.local/share/containers/podman/machine/podman.sock")
+  local darwin = vim.uv.os_uname().sysname == "Darwin"
+  local candidates = darwin
+      and {
+        home_sock,
+        inspect_machine_socket,
+        runtime_sock,
+      }
+    or {
+      runtime_sock,
+      "/run/podman/podman.sock",
+      home_sock,
+      inspect_machine_socket,
+    }
+  for _, item in ipairs(candidates) do
+    local path = item
+    if type(path) == "function" then
+      path = path()
+    end
+    if socket_path_ok(path) then
+      return strip_unix(path)
+    end
+  end
+end
+
+local function docker_host()
+  local existing = os.getenv("DOCKER_HOST")
+  if existing and existing ~= "" then
+    local unix = existing:find("^unix://")
+    if not unix or socket_path_ok(existing) then
+      return existing
+    end
+  end
+  local sock = podman_socket()
+  if sock then
+    return "unix://" .. sock
+  end
+end
+
+local function runtime_env(extra)
+  local env = extra or {}
+  local path = os.getenv("PATH") or ""
+  for _, dir in ipairs(EXTRA_PATHS) do
+    if vim.uv.fs_stat(dir) and not path:find(dir, 1, true) then
+      path = dir .. ":" .. path
+    end
+  end
+  env.PATH = path
+  local auth = vim.fn.expand("~/.config/containers/auth.json")
+  if vim.uv.fs_stat(auth) then
+    env.REGISTRY_AUTH_FILE = auth
+  end
+  local host = docker_host()
+  if host then
+    env.DOCKER_HOST = host
+    -- LazyDocker spricht die Docker-API; Podman ist damit kompatibel.
+    env.DOCKER_API_VERSION = "1.41"
+  end
+  return env, host
+end
+
+local warned_compose
+
+local function warn_compose_provider()
+  if warned_compose or not podman_bin() or compose_provider() then
+    return
+  end
+  warned_compose = true
+  vim.notify(
+    "podman compose braucht docker-compose oder podman-compose (brew install docker-compose)",
+    vim.log.levels.WARN,
+    { title = notify_title() }
+  )
+end
+
 local function is_standard_compose_name(name)
   name = (name or ""):lower()
   for _, candidate in ipairs(COMPOSE_NAMES) do
@@ -196,7 +385,7 @@ end
 local function config_dir()
   local src = config_file()
   if vim.uv.fs_stat(src) == nil then
-    vim.notify("lazydocker.yml fehlt unter " .. src, vim.log.levels.WARN, { title = "Docker" })
+    vim.notify("lazydocker.yml fehlt unter " .. src, vim.log.levels.WARN, { title = notify_title() })
   end
   local dir = vim.fn.stdpath("cache") .. "/colejj-lazydocker"
   vim.fn.mkdir(dir, "p")
@@ -252,16 +441,30 @@ local function open_float()
 end
 
 local function compose_cmd(item, args)
-  local cmd = { "docker", "compose", "-f", item.path, "-p", item.project }
+  local argv = compose_argv()
+  if not argv then
+    vim.notify("Weder podman noch docker gefunden", vim.log.levels.ERROR, { title = notify_title() })
+    return
+  end
+  if podman_bin() and not compose_provider() then
+    vim.notify(
+      "podman compose braucht docker-compose oder podman-compose (brew install docker-compose)",
+      vim.log.levels.ERROR,
+      { title = notify_title() }
+    )
+    return
+  end
+  local cmd = { argv[1], argv[2], "-f", item.path, "-p", item.project }
   vim.list_extend(cmd, args)
-  vim.notify(table.concat(args, " ") .. ": " .. item.name, vim.log.levels.INFO, { title = "Docker" })
-  vim.system(cmd, { cwd = item.dir, text = true, env = { COMPOSE_PROJECT_NAME = item.project } }, function(result)
+  local env = runtime_env({ COMPOSE_PROJECT_NAME = item.project })
+  vim.notify(table.concat(args, " ") .. ": " .. item.name, vim.log.levels.INFO, { title = notify_title() })
+  vim.system(cmd, { cwd = item.dir, text = true, env = env }, function(result)
     vim.schedule(function()
       if result.code == 0 then
-        vim.notify(item.name .. " · " .. table.concat(args, " ") .. " ok", vim.log.levels.INFO, { title = "Docker" })
+        vim.notify(item.name .. " · " .. table.concat(args, " ") .. " ok", vim.log.levels.INFO, { title = notify_title() })
       else
         local err = vim.trim(result.stderr or result.stdout or "")
-        vim.notify(err ~= "" and err or "Compose fehlgeschlagen", vim.log.levels.ERROR, { title = "Docker" })
+        vim.notify(err ~= "" and err or "Compose fehlgeschlagen", vim.log.levels.ERROR, { title = notify_title() })
       end
     end)
   end)
@@ -270,20 +473,35 @@ end
 function M.start_lazydocker(file, project)
   if vim.fn.executable("lazydocker") ~= 1 then
     vim.notify("lazydocker nicht gefunden. Homebrew: brew install lazydocker", vim.log.levels.ERROR, {
-      title = "Docker",
+      title = notify_title(),
     })
+    return
+  end
+  if podman_bin() then
+    if not docker_host() then
+      vim.notify(
+        "Kein Podman-Socket. Maschine starten: podman machine start",
+        vim.log.levels.ERROR,
+        { title = notify_title() }
+      )
+      return
+    end
+    warn_compose_provider()
+  elseif not docker_bin() then
+    vim.notify("Weder podman noch docker gefunden", vim.log.levels.ERROR, { title = notify_title() })
     return
   end
 
   close_float()
   prev_win = vim.api.nvim_get_current_win()
   float_win, float_buf = open_float()
-  local cwd = file and vim.fn.fnamemodify(file, ":h") or require("colejj.project").project_root()
+  -- Ohne Compose-Datei: Home, damit kein docker-compose.yml den Blick auf alle Container einengt.
+  local cwd = file and vim.fn.fnamemodify(file, ":h") or (vim.uv.os_homedir() or vim.fn.expand("~"))
   project = project or (file and vim.fn.fnamemodify(file, ":h:t"):lower():gsub("[^a-z0-9_-]", "-")) or nil
   local cmd = { "lazydocker" }
   -- Kein `-f`: LazyDocker matched sonst laufende Stacks nur über Service-Namen.
   -- `-p` + CWD der Compose-Datei hält Projekt und `up`/`down` am gewählten Ordner.
-  local env = { CONFIG_DIR = config_dir() }
+  local env = runtime_env({ CONFIG_DIR = config_dir() })
   if project and project ~= "" then
     cmd = { "lazydocker", "-p", project }
     env.COMPOSE_PROJECT_NAME = project
@@ -310,7 +528,7 @@ function M.start_lazydocker(file, project)
     on_exit = function(_, code)
       vim.schedule(function()
         if code ~= 0 and code ~= 130 then
-          vim.notify("lazydocker beendet mit Code " .. tostring(code), vim.log.levels.WARN, { title = "Docker" })
+          vim.notify("lazydocker beendet mit Code " .. tostring(code), vim.log.levels.WARN, { title = notify_title() })
         end
         close_float()
         if prev_win and vim.api.nvim_win_is_valid(prev_win) then
@@ -354,7 +572,8 @@ local function pick_compose(items)
 
   pickers
     .new({}, {
-      prompt_title = "Docker Compose  ·  Enter LazyDocker  ·  u up  ·  d down",
+      prompt_title = (podman_bin() and "Podman" or "Docker")
+        .. " Compose  ·  Enter LazyDocker  ·  u up  ·  d down",
       default_selection_index = default_idx,
       layout_strategy = "vertical",
       layout_config = {
@@ -423,12 +642,17 @@ function M.open()
   local items = M.list_compose_files()
   if #items == 0 then
     vim.notify("Keine Compose-Dateien im Projekt. LazyDocker zeigt nur Container.", vim.log.levels.WARN, {
-      title = "Docker",
+      title = notify_title(),
     })
     M.start_lazydocker(nil)
     return
   end
   pick_compose(items)
+end
+
+--- LazyDocker ohne Compose-Picker: alle Container, Images, Volumes.
+function M.open_all()
+  M.start_lazydocker(nil)
 end
 
 return M

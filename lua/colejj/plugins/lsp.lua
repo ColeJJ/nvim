@@ -8,7 +8,7 @@ return {
     "williamboman/mason-lspconfig.nvim",
     dependencies = { "williamboman/mason.nvim", "neovim/nvim-lspconfig" },
     opts = function()
-      local ensure = { "lua_ls" }
+      local ensure = { "lua_ls", "marksman", "lemminx" }
       if vim.fn.executable("go") == 1 then
         ensure[#ensure + 1] = "gopls"
       end
@@ -74,7 +74,37 @@ return {
         },
       })
 
-      local servers = { "lua_ls" }
+      -- gcIntellijCodeStyle, XML: Einzug 2, Continuation 4, Tab 2, Margin 100.
+      -- Defaults aus dem Export: Zeilenumbrüche behalten, bis zu 2 Leerzeilen,
+      -- Attribute nur umbrechen wenn die Zeile zu lang wird.
+      local xml_format = {
+        enabled = true,
+        splitAttributes = "preserve",
+        splitAttributesIndentSize = 4,
+        maxLineWidth = 100,
+        preservedNewlines = 2,
+        preserveAttributeLineBreaks = true,
+        joinContentLines = false,
+        joinCDATALines = false,
+        joinCommentLines = false,
+        spaceBeforeEmptyCloseTag = false,
+        closingBracketNewLine = false,
+        grammarAwareFormatting = false,
+        enforceQuoteStyle = "ignore",
+        emptyElements = "ignore",
+      }
+      vim.lsp.config("lemminx", {
+        init_options = {
+          settings = {
+            xml = { format = xml_format },
+          },
+        },
+        settings = {
+          xml = { format = xml_format },
+        },
+      })
+
+      local servers = { "lua_ls", "marksman" }
       if vim.fn.executable("go") == 1 or vim.fn.executable("gopls") == 1 then
         servers[#servers + 1] = "gopls"
       end

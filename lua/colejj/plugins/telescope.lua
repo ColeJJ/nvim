@@ -16,6 +16,7 @@ return {
     config = function()
       local telescope = require("telescope")
       local builtin = require("telescope.builtin")
+      local orig_preview_maker = require("telescope.previewers").buffer_previewer_maker
       telescope.setup({
         defaults = {
           file_ignore_patterns = { ".git/", "node_modules/", "dist/", "/bin/", "target/" },
@@ -31,6 +32,27 @@ return {
               width = 0.8,
             },
           },
+          buffer_previewer_maker = function(filepath, bufnr, opts)
+            opts = opts or {}
+            local prior = opts.callback
+            opts.callback = function(buf)
+              if prior then
+                prior(buf)
+              end
+              -- find_files nutzt den Grep-Previewer (Callback ohne lnum bleibt in Zeile 1).
+              vim.schedule(function()
+                local winid = opts.winid
+                local line = 1
+                if winid and vim.api.nvim_win_is_valid(winid) then
+                  line = vim.api.nvim_win_get_cursor(winid)[1]
+                end
+                if line <= 1 then
+                  require("colejj.preview").jump_to_type(buf, winid, filepath)
+                end
+              end)
+            end
+            orig_preview_maker(filepath, bufnr, opts)
+          end,
         },
         extensions = {
           fzf = {
@@ -58,7 +80,9 @@ return {
       vim.keymap.set("n", "<leader>fF", function()
         require("colejj.java.commands").goto_class_anywhere()
       end, vim.tbl_extend("force", ns, { desc = "Klasse inkl. Dependencies" }))
-      vim.keymap.set("n", "<leader>fc", builtin.git_commits, { desc = "Git-Commits" })
+      vim.keymap.set("n", "<leader>fc", function()
+        require("colejj.git.commit").pick()
+      end, { desc = "Git-Commits (Details)" })
       vim.keymap.set("n", "<leader>fw", builtin.grep_string, { desc = "Wort unter Cursor" })
       vim.keymap.set("n", "<leader>fx", builtin.diagnostics, { desc = "Diagnosen" })
       vim.keymap.set("n", "<leader>fo", function()

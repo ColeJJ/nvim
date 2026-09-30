@@ -4,3 +4,4 @@ plugin/packer_compiled.lua
 ./config_folders/vscode-php-debug
 .DS_Store
 lua/colejj/database/profiles.local.lua
+lua/colejj/git/review.local.lua
