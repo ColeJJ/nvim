@@ -136,11 +136,26 @@ return {
           important = {
             raw = "[!]",
             rendered = "[!] ",
-            highlight = "DiagnosticError",
+            highlight = "MarkdownCheckboxImportant",
           },
         },
       },
     },
+    config = function(_, opts)
+      local function plain_important()
+        local hl = vim.api.nvim_get_hl(0, { name = "DiagnosticError", link = false })
+        vim.api.nvim_set_hl(0, "MarkdownCheckboxImportant", {
+          fg = hl.fg,
+          nocombine = true,
+        })
+      end
+      plain_important()
+      vim.api.nvim_create_autocmd("ColorScheme", {
+        group = vim.api.nvim_create_augroup("colejj_markdown_checkbox", { clear = true }),
+        callback = plain_important,
+      })
+      require("render-markdown").setup(opts)
+    end,
   },
   {
     "theprimeagen/harpoon",
