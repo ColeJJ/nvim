@@ -183,7 +183,6 @@ return {
         { "<leader>oC", desc = "LazyDocker (alle Container)" },
         { "<leader>od", desc = "Datenbank-Viewer" },
         { "<leader>oe", desc = "Dired (Verzeichnis dieser Datei)" },
-        { "<leader>oE", desc = "Superfile" },
         { "<leader>w", group = "fenster" },
         { "<leader>wh", desc = "Fenster links" },
         { "<leader>wj", desc = "Fenster unten" },

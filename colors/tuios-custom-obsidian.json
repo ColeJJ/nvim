@@ -1,0 +1,23 @@
+{
+  "id": "custom-obsidian",
+  "display_name": "Custom Obsidian",
+  "fg": "#c9cccd",
+  "bg": "#010611",
+  "cursor": "#A0A0A0",
+  "black": "#05111D",
+  "red": "#ff4262",
+  "green": "#97cb8f",
+  "yellow": "#e3d363",
+  "blue": "#cadee8",
+  "purple": "#cd92a1",
+  "cyan": "#0f859b",
+  "white": "#c9cccd",
+  "bright_black": "#293941",
+  "bright_red": "#ff4262",
+  "bright_green": "#508654",
+  "bright_yellow": "#d9c979",
+  "bright_blue": "#5d82ba",
+  "bright_purple": "#716994",
+  "bright_cyan": "#0f859b",
+  "bright_white": "#e0e0e7"
+}
