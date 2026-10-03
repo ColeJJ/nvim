@@ -178,6 +178,7 @@ Postgres-Viewer über DBee; SQL-Dateien über Dadbod. Details:
 | --- | --- |
 | `gg` / `gs` | LazyGit / aktuelle Datei |
 | `gm` | GitLab-MRs: Übersicht, Diff, Kommentare, Approve ([docs/review.md](docs/review.md)) |
+| `gt` | denselben MR in tuicr reviewen (`:submit` kommentiert und approved) |
 | `fc` | Commit suchen; Enter öffnet Details im vertikalen Buffer (`q` zu, `c` Checkout) |
 | `gb` | Inline-Blame |
 | `gd` / `gD` | Datei-Diff vs HEAD / vs Abzweigpunkt (readonly, `e` sprung, `d` verwerfen) |

@@ -563,6 +563,9 @@ end
 
 function M.setup()
   vim.keymap.set("n", "<leader>gm", M.pick, { desc = "Merge Requests" })
+  vim.api.nvim_create_user_command("TuicrMR", function(opts)
+    require("colejj.git.tuicr").open(opts.args)
+  end, { nargs = "?", desc = "GitLab-MR in tuicr öffnen" })
   vim.api.nvim_create_user_command("GitLabMR", function(opts)
     local arg = vim.trim(opts.args or "")
     if arg == "" then

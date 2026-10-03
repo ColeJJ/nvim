@@ -75,7 +75,21 @@ return {
         key = "<CR>",
         mode = "n",
         action = function()
-          require("colejj.database").edit_dbee_cell()
+          require("colejj.database.delete").confirm_or_edit()
+        end,
+      })
+      table.insert(result_mappings, {
+        key = "dd",
+        mode = "n",
+        action = function()
+          require("colejj.database.delete").toggle_current()
+        end,
+      })
+      table.insert(result_mappings, {
+        key = "dd",
+        mode = "v",
+        action = function()
+          require("colejj.database.delete").toggle_visual()
         end,
       })
       table.insert(editor_mappings, {

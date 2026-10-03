@@ -22,7 +22,7 @@ require("lazy").setup({
     { import = "colejj.plugins" },
   },
   install = {
-    colorscheme = { "tj" },
+    colorscheme = { "custom-obsidian" },
   },
   defaults = {
     lazy = false,

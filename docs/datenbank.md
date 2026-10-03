@@ -111,6 +111,9 @@ Im Resultat:
 - `L` / `H` — nächste / vorherige Seite
 - `F` / `E` — erste / letzte Seite
 - `Enter` — Zelle bearbeiten, erneutes `Enter` speichert (`UPDATE` über Primary Key), `Esc` bricht ab. Leer oder `NULL` setzt die Spalte auf `NULL`, `''` speichert einen leeren Text.
+- `dd` — aktuelle Zeile zum Löschen markieren bzw. Markierung aufheben
+- visuell Zeilen wählen, dann `dd` — mehrere Zeilen zum Löschen markieren bzw. Markierungen aufheben
+- `Enter` bei vorhandenen Löschmarkierungen — alle markierten Zeilen atomar über ihren Primary Key löschen
 - `yy` / `yc` — Zelle unter dem Cursor kopieren (`NULL` wird leer)
 - `yac` / `yaj` — aktuelle Zeile als CSV / JSON kopieren
 - `yaC` / `yaJ` — alle Zeilen als CSV / JSON kopieren

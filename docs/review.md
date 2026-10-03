@@ -52,3 +52,21 @@ return {
 
 Host und Projekt kommen aus `origin` (`gitlab.guidecom.de` und
 `gitlab.guidecom.local` werden erkannt).
+
+## tuicr
+
+`SPC g t` öffnet denselben MR in [tuicr](https://github.com/agavra/tuicr):
+Nummer oder URL eingeben, leer lassen nimmt den MR des aktuellen Branches.
+`:TuicrMR 125` geht direkt auf `!125`. Inline-Kommentare und Approve laufen
+in tuicr über `:submit`. `SPC g m` bleibt die Neovim-Übersicht.
+
+Einmalig, außerhalb von Neovim:
+
+```bash
+brew install glab tuicr
+glab auth login --hostname gitlab.guidecom.de
+```
+
+tuicr speichert kein Token. Es nutzt das Konto, mit dem `glab` am Host
+angemeldet ist. Für die zweite Instanz denselben Login mit
+`--hostname gitlab.guidecom.local` wiederholen.
