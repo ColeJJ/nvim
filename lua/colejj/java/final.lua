@@ -629,7 +629,7 @@ function M.setup()
       schedule(event.buf)
     end,
   })
-  vim.api.nvim_create_autocmd({ "BufWritePost", "InsertLeave", "TextChanged" }, {
+  vim.api.nvim_create_autocmd({ "BufWritePost", "InsertLeave" }, {
     group = group,
     pattern = "*.java",
     callback = function(event)

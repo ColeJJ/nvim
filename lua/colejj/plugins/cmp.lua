@@ -3,11 +3,12 @@ return {
     "L3MON4D3/LuaSnip",
     version = "v2.*",
     build = "make install_jsregexp",
+    event = "InsertEnter",
     dependencies = { "rafamadriz/friendly-snippets" },
     config = function()
       local luasnip = require("luasnip")
       luasnip.setup({
-        update_events = { "TextChanged", "TextChangedI" },
+        update_events = { "TextChangedI" },
       })
       require("luasnip.loaders.from_vscode").lazy_load()
       luasnip.filetype_extend("html", { "angular" })
@@ -17,12 +18,12 @@ return {
   },
   {
     "hrsh7th/nvim-cmp",
+    event = "InsertEnter",
     dependencies = {
       "hrsh7th/cmp-nvim-lsp",
       "hrsh7th/cmp-buffer",
       "hrsh7th/cmp-path",
       "hrsh7th/cmp-emoji",
-      "hrsh7th/cmp-nvim-lua",
       "saadparwaiz1/cmp_luasnip",
       "onsails/lspkind-nvim",
       "L3MON4D3/LuaSnip",
@@ -33,10 +34,7 @@ return {
       local luasnip = require("luasnip")
       local lspkind = require("lspkind")
 
-      -- cmp-dap lädt nvim-cmp schon beim Start via require("cmp"). lazy.nvim
-      -- überspringt dann after/plugin der restlichen Quellen — ohne Nachzug
-      -- bleiben LuaSnip/LSP/Buffer stumm. Nach dem Load-Zyklus nur Lücken füllen,
-      -- damit after/plugin nicht zusätzlich dupliziert.
+      -- Quellen, deren after/plugin den Load-Zyklus verpasst hat, nachziehen.
       local function source_registered(name)
         for _, src in pairs(cmp.core.sources) do
           if src.name == name then
@@ -71,9 +69,6 @@ return {
         end)
         ensure_source("emoji", function()
           return require("cmp_emoji").new()
-        end)
-        ensure_source("nvim_lua", function()
-          return require("cmp_nvim_lua").new()
         end)
         ensure_source("vim-dadbod-completion", function()
           return require("vim_dadbod_completion").nvim_cmp_source
@@ -136,9 +131,8 @@ return {
         sources = cmp.config.sources({
           { name = "nvim_lsp" },
           { name = "luasnip" },
-          { name = "buffer" },
+          { name = "buffer", keyword_length = 2 },
           { name = "path" },
-          { name = "emoji" },
         }),
         formatting = {
           format = lspkind.cmp_format({
@@ -157,7 +151,6 @@ return {
               buffer = "[Buffer]",
               nvim_lsp = "[LSP]",
               luasnip = "[Snippet]",
-              nvim_lua = "[Lua]",
               ["vim-dadbod-completion"] = "[DB]",
             },
           }),
@@ -167,7 +160,7 @@ return {
       local snippet_first = {
         { name = "luasnip", keyword_length = 1 },
         { name = "nvim_lsp" },
-        { name = "buffer" },
+        { name = "buffer", keyword_length = 2 },
         { name = "path" },
       }
       cmp.setup.filetype({ "xml", "java", "kotlin" }, {
@@ -180,7 +173,7 @@ return {
           { name = "nvim_lsp" },
           { name = "path" },
           { name = "emoji" },
-          { name = "buffer" },
+          { name = "buffer", keyword_length = 2 },
         }),
       })
 
@@ -188,17 +181,10 @@ return {
         sources = cmp.config.sources({
           { name = "vim-dadbod-completion" },
           { name = "luasnip" },
-          { name = "buffer" },
+          { name = "buffer", keyword_length = 2 },
           { name = "path" },
         }),
       })
-
-      vim.keymap.set("n", "<leader>is", function()
-        require("telescope.builtin").live_grep({
-          prompt_title = "Snippets (LuaSnip)",
-          search_dirs = { vim.fn.stdpath("config") .. "/lua/colejj/snippets" },
-        })
-      end, { desc = "Snippets durchsuchen" })
 
       vim.schedule(ensure_sources)
     end,

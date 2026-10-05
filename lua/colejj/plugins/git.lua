@@ -1,9 +1,5 @@
 return {
   {
-    "ThePrimeagen/git-worktree.nvim",
-    dependencies = { "nvim-lua/plenary.nvim", "nvim-telescope/telescope.nvim" },
-  },
-  {
     "kdheepak/lazygit.nvim",
     cmd = { "LazyGit", "LazyGitCurrentFile" },
     init = function()
@@ -52,6 +48,7 @@ return {
   {
     "akinsho/git-conflict.nvim",
     version = "*",
+    event = { "BufReadPost", "BufNewFile" },
     config = true,
     keys = {
       { "<leader>gc", "<cmd>GitConflictListQf<CR>", desc = "Merge-Konflikte" },

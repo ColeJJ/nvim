@@ -61,9 +61,6 @@ vim.api.nvim_create_autocmd("FileType", {
 vim.g.html_indent_style1 = "auto"
 vim.g.html_indent_script1 = "auto"
 
-vim.g.leetcode_browser = "chrome"
-vim.g.leetcode_solution_filetype = "typescript"
-
 local version = vim.version()
 if version.major == 0 and version.minor == 11 and version.patch < 5 then
   vim.api.nvim_create_autocmd("VimEnter", {

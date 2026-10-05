@@ -1,1 +1,2 @@
 WRN 2026-09-02T08:56:31.502 ?.37340    server_start:197: Failed to start server: operation not permitted: /var/folders/cq/gz0fltfx4cn80d4cb7v2s4sc0000gp/T/nvim.torben.unland/1ISz54/nvim.37340.0
+WRN 2026-10-05T11:31:10.082 ?.66756    server_start:197: Failed to start server: operation not permitted: /var/folders/cq/gz0fltfx4cn80d4cb7v2s4sc0000gp/T/nvim.torben.unland/ENWcfb/nvim.66756.0

@@ -9,13 +9,13 @@ return {
   },
   {
     "tjdevries/colorbuddy.nvim",
-    lazy = false,
+    lazy = true,
   },
   {
     "norcalli/nvim-colorizer.lua",
     event = "VeryLazy",
     config = function()
-      require("colorizer").setup()
+      require("colorizer").setup({ "css", "html", "lua", "conf", "tmux" })
     end,
   },
   {
@@ -52,11 +52,11 @@ return {
         component_separators = { left = "", right = "" },
         section_separators = { left = "", right = "" },
         always_divide_middle = false,
-        globalstatus = false,
+        globalstatus = true,
       },
       sections = {
         lualine_a = { "mode" },
-        lualine_b = { "branch", "diff" },
+        lualine_b = { "branch" },
         lualine_c = { { "filename", file_status = true, path = 1 } },
         lualine_x = { "encoding", "fileformat", "filetype" },
         lualine_y = { "progress" },
@@ -79,7 +79,7 @@ return {
       sync_root_with_cwd = true,
       update_focused_file = {
         enable = true,
-        update_cwd = true,
+        update_cwd = false,
       },
       renderer = {
         root_folder_modifier = ":t",
@@ -97,7 +97,7 @@ return {
       },
       diagnostics = {
         enable = true,
-        show_on_dirs = true,
+        show_on_dirs = false,
       },
       view = { adaptive_size = true },
       filters = {

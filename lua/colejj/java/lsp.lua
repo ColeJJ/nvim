@@ -38,9 +38,9 @@ function M.settings()
         maven = user_settings and { userSettings = user_settings } or nil,
       },
       references = { includeDecompiledSources = false },
-      implementationsCodeLens = { enabled = true },
-      referencesCodeLens = { enabled = true },
-      inlayHints = { parameterNames = { enabled = "all" } },
+      implementationsCodeLens = { enabled = false },
+      referencesCodeLens = { enabled = false },
+      inlayHints = { parameterNames = { enabled = "literals" } },
       signatureHelp = { enabled = true },
       contentProvider = { preferred = "fernflower" },
       format = {

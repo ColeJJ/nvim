@@ -1,11 +1,19 @@
+local mason_bin = vim.fn.stdpath("data") .. "/mason/bin"
+if vim.env.PATH and not vim.env.PATH:find(mason_bin, 1, true) then
+  vim.env.PATH = mason_bin .. ":" .. vim.env.PATH
+end
+
 return {
   {
     "williamboman/mason.nvim",
+    cmd = { "Mason", "MasonUpdate", "MasonInstall", "MasonUninstall", "MasonLog" },
+    event = "VeryLazy",
     build = ":MasonUpdate",
     opts = {},
   },
   {
     "williamboman/mason-lspconfig.nvim",
+    event = "VeryLazy",
     dependencies = { "williamboman/mason.nvim", "neovim/nvim-lspconfig" },
     opts = function()
       local ensure = { "lua_ls", "marksman", "lemminx" }
@@ -22,12 +30,13 @@ return {
   },
   {
     "WhoIsSethDaniel/mason-tool-installer.nvim",
+    cmd = { "MasonToolsInstall", "MasonToolsUpdate" },
+    event = "VeryLazy",
     dependencies = { "williamboman/mason.nvim" },
     opts = {
       ensure_installed = {
         "stylua",
         "prettier",
-        "eslint_d",
         "ktlint",
       },
       run_on_start = false,
@@ -35,9 +44,9 @@ return {
   },
   {
     "neovim/nvim-lspconfig",
+    event = { "BufReadPre", "BufNewFile" },
     dependencies = {
       "hrsh7th/cmp-nvim-lsp",
-      "williamboman/mason-lspconfig.nvim",
     },
     config = function()
       local capabilities = vim.lsp.protocol.make_client_capabilities()
@@ -57,7 +66,10 @@ return {
             diagnostics = { globals = { "vim" } },
             workspace = {
               checkThirdParty = false,
-              library = vim.api.nvim_get_runtime_file("", true),
+              library = {
+                vim.env.VIMRUNTIME .. "/lua",
+                vim.fn.stdpath("config") .. "/lua",
+              },
             },
             telemetry = { enable = false },
           },
@@ -104,7 +116,7 @@ return {
         },
       })
 
-      local servers = { "lua_ls", "marksman" }
+      local servers = { "lua_ls", "marksman", "lemminx" }
       if vim.fn.executable("go") == 1 or vim.fn.executable("gopls") == 1 then
         servers[#servers + 1] = "gopls"
       end

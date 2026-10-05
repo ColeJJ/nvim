@@ -2,11 +2,30 @@ return {
   { "nvim-neotest/nvim-nio", lazy = true },
   {
     "mfussenegger/nvim-dap",
+    keys = {
+      { "<leader>dd" },
+      { "<leader>db" },
+      { "<leader>dc" },
+      { "<leader>dl" },
+      { "<leader>dn" },
+      { "<leader>di" },
+      { "<leader>do" },
+      { "<leader>dq" },
+      { "<leader>dL" },
+      { "<leader>de" },
+      { "<leader>dE" },
+      { "<leader>dw" },
+      { "<leader>dr" },
+      { "<leader>du", mode = { "n", "v" } },
+      { "<leader>dU", mode = { "n", "v" } },
+      { "<F5>" },
+      { "<F7>" },
+      { "<F8>" },
+    },
     dependencies = {
       "rcarriga/nvim-dap-ui",
       "theHamsta/nvim-dap-virtual-text",
-      "nvim-telescope/telescope-dap.nvim",
-      "rcarriga/cmp-dap",
+      "nvim-neotest/nvim-nio",
     },
     config = function()
       local dap = require("dap")
@@ -72,32 +91,6 @@ return {
 
       dap.defaults.fallback.terminal_win_cmd = function()
         return require("colejj.java.output").ensure("Debug Console")
-      end
-
-      -- PHP
-      local php_adapter = vim.fn.stdpath("config") .. "/config_folders/vscode-php-debug/out/phpDebug.js"
-      if vim.uv.fs_stat(php_adapter) then
-        dap.adapters.php = {
-          type = "executable",
-          command = "node",
-          args = { php_adapter },
-        }
-        dap.configurations.php = {
-          {
-            type = "php",
-            request = "launch",
-            name = "Listen for Xdebug",
-            port = 9003,
-          },
-          {
-            type = "php",
-            request = "launch",
-            name = "Launch currently open script",
-            program = "${file}",
-            cwd = "${fileDirname}",
-            port = 9003,
-          },
-        }
       end
 
       -- Java Attach (Launch-Configs kommen von nvim-java / idea-Picker)

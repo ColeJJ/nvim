@@ -1128,18 +1128,8 @@ function M.setup()
   vim.api.nvim_set_hl(0, "ColejjTestFail", { default = true, link = "NeotestFailed" })
   vim.api.nvim_set_hl(0, "ColejjTestSkip", { default = true, link = "NeotestSkipped" })
   vim.api.nvim_set_hl(0, "ColejjTestRun", { default = true, link = "NeotestRunning" })
-
-  vim.api.nvim_create_user_command("JavaTestAtPoint", M.run_at_point, { desc = "Test unter Cursor" })
-  vim.api.nvim_create_user_command("JavaTestClass", M.run_class, { desc = "Testklasse ausführen" })
-  local map = function(lhs, rhs, desc)
-    vim.keymap.set("n", lhs, rhs, { silent = true, desc = desc })
-  end
-  map("<leader>rtt", M.run_at_point, "Test unter Cursor")
-  map("<leader>rta", M.run_class, "Tests dieser Klasse")
-  map("<leader>rtl", M.rerun, "Letzten Test wiederholen")
-  map("<leader>rto", M.toggle, "Testergebnisse")
-  map("<leader>rts", M.toggle, "Testergebnisse")
-  map("<leader>rtS", M.stop, "Tests stoppen")
 end
+
+M.setup()
 
 return M

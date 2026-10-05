@@ -196,3 +196,65 @@ vim.keymap.set("x", "<leader>R", function()
 end, { desc = "Auswahl ersetzen" })
 
 vim.cmd("command! W :w")
+
+-- Schwere Module erst beim ersten Aufruf laden.
+vim.keymap.set("n", "<leader>gb", function()
+  local blame = require("colejj.git.blame")
+  blame.setup()
+  blame.toggle()
+end, { desc = "Inline-Blame (Heatmap)" })
+
+vim.keymap.set("n", "<leader>gm", function()
+  require("colejj.git.review").pick()
+end, { desc = "Merge Requests" })
+
+vim.api.nvim_create_user_command("TuicrMR", function(opts)
+  require("colejj.git.tuicr").open(opts.args)
+end, { nargs = "?", desc = "GitLab-MR in tuicr öffnen" })
+
+vim.api.nvim_create_user_command("GitLabMR", function(opts)
+  local review = require("colejj.git.review")
+  local arg = vim.trim(opts.args or "")
+  if arg == "" then
+    review.pick()
+    return
+  end
+  local iid = tonumber(arg:gsub("^!", ""))
+  if not iid then
+    vim.notify("Nutzung: :GitLabMR [IID]", vim.log.levels.WARN, { title = "GitLab" })
+    return
+  end
+  review.open(iid)
+end, { nargs = "?", desc = "GitLab Merge Requests" })
+
+local function java_test()
+  local test = require("colejj.java.test")
+  test.setup()
+  return test
+end
+
+vim.keymap.set("n", "<leader>rtt", function()
+  java_test().run_at_point()
+end, { silent = true, desc = "Test unter Cursor" })
+vim.keymap.set("n", "<leader>rta", function()
+  java_test().run_class()
+end, { silent = true, desc = "Tests dieser Klasse" })
+vim.keymap.set("n", "<leader>rtl", function()
+  java_test().rerun()
+end, { silent = true, desc = "Letzten Test wiederholen" })
+vim.keymap.set("n", "<leader>rto", function()
+  java_test().toggle()
+end, { silent = true, desc = "Testergebnisse" })
+vim.keymap.set("n", "<leader>rts", function()
+  java_test().toggle()
+end, { silent = true, desc = "Testergebnisse" })
+vim.keymap.set("n", "<leader>rtS", function()
+  java_test().stop()
+end, { silent = true, desc = "Tests stoppen" })
+
+vim.api.nvim_create_user_command("JavaTestAtPoint", function()
+  java_test().run_at_point()
+end, { desc = "Test unter Cursor" })
+vim.api.nvim_create_user_command("JavaTestClass", function()
+  java_test().run_class()
+end, { desc = "Testklasse ausführen" })

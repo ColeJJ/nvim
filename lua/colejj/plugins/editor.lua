@@ -3,6 +3,7 @@ return {
     "nvim-treesitter/nvim-treesitter",
     branch = "master",
     build = ":TSUpdate",
+    event = { "BufReadPost", "BufNewFile" },
     dependencies = {
       { "nvim-treesitter/nvim-treesitter-textobjects", branch = "master" },
     },
@@ -30,7 +31,7 @@ return {
           "diff",
         },
         sync_install = false,
-        auto_install = true,
+        auto_install = false,
         highlight = {
           enable = true,
           additional_vim_regex_highlighting = false,
@@ -160,9 +161,36 @@ return {
   {
     "theprimeagen/harpoon",
     dependencies = { "nvim-lua/plenary.nvim" },
+    keys = (function()
+      local keys = {
+        {
+          "<leader>ha",
+          function()
+            require("harpoon.mark").add_file()
+          end,
+          desc = "Harpoon: Datei merken",
+        },
+        {
+          "<leader>he",
+          function()
+            require("harpoon.ui").toggle_quick_menu()
+          end,
+          desc = "Harpoon: Menü",
+        },
+      }
+      for i = 1, 6 do
+        local n = i
+        keys[#keys + 1] = {
+          "<leader>h" .. n,
+          function()
+            require("harpoon.ui").nav_file(n)
+          end,
+          desc = "Harpoon: Datei " .. n,
+        }
+      end
+      return keys
+    end)(),
     config = function()
-      local mark = require("harpoon.mark")
-      local ui = require("harpoon.ui")
       require("harpoon").setup({
         menu = {
           width = vim.api.nvim_win_get_width(0) - 4,
@@ -172,13 +200,6 @@ return {
         tabline_suffix = " ",
       })
       require("colejj.harpoon_tabline").setup()
-      vim.keymap.set("n", "<leader>ha", mark.add_file, { desc = "Harpoon: Datei merken" })
-      vim.keymap.set("n", "<leader>he", ui.toggle_quick_menu, { desc = "Harpoon: Menü" })
-      for i = 1, 6 do
-        vim.keymap.set("n", "<leader>h" .. i, function()
-          ui.nav_file(i)
-        end, { desc = "Harpoon: Datei " .. i })
-      end
     end,
   },
   {
@@ -187,10 +208,14 @@ return {
       { "<leader>u", "<cmd>UndotreeToggle<CR>", desc = "Undotree" },
     },
   },
-  { "jiangmiao/auto-pairs" },
-  { "alvan/vim-closetag" },
+  { "jiangmiao/auto-pairs", event = "InsertEnter" },
+  { "alvan/vim-closetag", event = "InsertEnter", ft = { "html", "xml", "xhtml" } },
   {
     "numToStr/Comment.nvim",
+    keys = {
+      { "cc", mode = { "n", "v" } },
+      { "cb", mode = { "n", "v" } },
+    },
     opts = {
       padding = true,
       sticky = true,
@@ -200,7 +225,23 @@ return {
   },
   {
     "stevearc/conform.nvim",
-    event = { "BufReadPre", "BufNewFile" },
+    keys = {
+      {
+        "<leader>cf",
+        function()
+          require("conform").format({ lsp_fallback = true, async = false, timeout_ms = 5000 })
+        end,
+        mode = { "n", "v" },
+        desc = "Format (IntelliJ-Profil)",
+      },
+      {
+        "<leader>jf",
+        function()
+          require("conform").format({ lsp_fallback = true, async = false, timeout_ms = 5000 })
+        end,
+        desc = "Format (IntelliJ-Profil)",
+      },
+    },
     config = function()
       local conform = require("conform")
       conform.setup({
@@ -224,24 +265,6 @@ return {
           },
         },
       })
-      vim.keymap.set({ "n", "v" }, "<leader>cf", function()
-        conform.format({
-          lsp_fallback = true,
-          async = false,
-          timeout_ms = 5000,
-        })
-      end, { desc = "Format (IntelliJ-Profil)" })
     end,
   },
-  {
-    "mfussenegger/nvim-lint",
-    event = { "BufReadPre", "BufNewFile" },
-    config = function()
-      require("lint").linters_by_ft = {
-        javascript = { "eslint_d" },
-        typescript = { "eslint_d" },
-      }
-    end,
-  },
-  { "ThePrimeagen/vim-be-good", cmd = "VimBeGood" },
 }

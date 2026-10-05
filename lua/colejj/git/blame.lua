@@ -249,7 +249,6 @@ function M.toggle()
 end
 
 function M.setup()
-  vim.keymap.set("n", "<leader>gb", M.toggle, { desc = "Inline-Blame (Heatmap)" })
   vim.api.nvim_create_autocmd("BufWipeout", {
     group = vim.api.nvim_create_augroup("colejj-git-blame", { clear = true }),
     callback = function(event)

@@ -10,10 +10,12 @@ local favorites = {
 }
 
 local function refresh_lualine()
-  local ok, lualine = pcall(require, "lualine")
-  if not ok then
+  local lazy_ok, cfg = pcall(require, "lazy.core.config")
+  local plugin = lazy_ok and cfg.plugins["lualine.nvim"]
+  if not (plugin and plugin._ and plugin._.loaded) then
     return
   end
+  local lualine = require("lualine")
   local cfg = lualine.get_config()
   if vim.g.colors_name == "custom-obsidian" then
     cfg.options.theme = vim.g.custom_obsidian_lualine or "auto"

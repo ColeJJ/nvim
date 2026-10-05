@@ -1,15 +1,15 @@
 return {
   {
-    "rcasia/neotest-java",
-    ft = "java",
-    dependencies = { "mfussenegger/nvim-dap" },
-  },
-  {
     "nvim-neotest/neotest",
+    keys = {
+      { "<leader>rtd", desc = "Test debuggen" },
+      { "<leader>rtD", desc = "Datei debuggen" },
+    },
     dependencies = {
       "nvim-neotest/nvim-nio",
       "nvim-lua/plenary.nvim",
       "nvim-treesitter/nvim-treesitter",
+      "mfussenegger/nvim-dap",
       "rcasia/neotest-java",
     },
     config = function()

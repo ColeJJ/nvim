@@ -1,17 +1,52 @@
 return {
   { "nvim-lua/plenary.nvim", lazy = true },
   {
-    "nvim-telescope/telescope-fzf-native.nvim",
-    build = "make",
-  },
-  { "junegunn/fzf" },
-  { "junegunn/fzf.vim" },
-  { "camgraff/telescope-tmux.nvim" },
-  {
     "nvim-telescope/telescope.nvim",
+    cmd = "Telescope",
+    keys = {
+      { "<leader>ff" },
+      { "<leader><leader>" },
+      { "<leader>fF" },
+      { "<leader>fc" },
+      { "<leader>fw" },
+      { "<leader>fx" },
+      { "<leader>fo" },
+      { "<leader>fu" },
+      { "<leader>fb" },
+      { "<leader>bl" },
+      { "<leader>fm" },
+      { "<leader>fT" },
+      { "<leader>gr", mode = { "n", "x" } },
+      { "<leader>/", mode = { "n", "x" } },
+      { "<leader>?" },
+      { "<leader>is" },
+      { "<leader>si" },
+      { "<leader>sI" },
+      { "<leader>sC" },
+      { "<leader>sc" },
+      { "<leader>sa" },
+      { "<leader>ss", mode = { "n", "x" } },
+      { "<leader>sb", mode = { "n", "x" } },
+      { "<leader>sS" },
+      { "<leader>sw" },
+      { "<leader>sB" },
+      { "<leader>sp", mode = { "n", "x" } },
+      { "<leader>sF" },
+      { "<leader>sP" },
+      { "<leader>sd" },
+      { "<leader>sD" },
+      { "<leader>se" },
+      { "<leader>sf" },
+      { "<leader>sj" },
+      { "<leader>sm" },
+      { "<leader>s'" },
+      { "<leader>sr" },
+      { "<leader>su" },
+    },
     dependencies = {
       "nvim-lua/plenary.nvim",
-      "nvim-telescope/telescope-fzf-native.nvim",
+      { "nvim-telescope/telescope-fzf-native.nvim", build = "make" },
+      "camgraff/telescope-tmux.nvim",
     },
     config = function()
       local telescope = require("telescope")
@@ -63,8 +98,7 @@ return {
         },
       })
       pcall(telescope.load_extension, "fzf")
-      pcall(telescope.load_extension, "git_worktree")
-      pcall(telescope.load_extension, "dap")
+      pcall(telescope.load_extension, "tmux")
 
       local ns = { noremap = true, silent = true }
       local function find_project_files()
@@ -185,6 +219,12 @@ return {
       vim.keymap.set("n", "<leader>fm", function()
         require("colejj.find").project_method()
       end, { desc = "Methode im Projekt finden" })
+      vim.keymap.set("n", "<leader>is", function()
+        builtin.live_grep({
+          prompt_title = "Snippets (LuaSnip)",
+          search_dirs = { vim.fn.stdpath("config") .. "/lua/colejj/snippets" },
+        })
+      end, { desc = "Snippets durchsuchen" })
     end,
   },
 }
