@@ -13,6 +13,20 @@ local function valid_win()
   return win and vim.api.nvim_win_is_valid(win)
 end
 
+-- Fester Name ohne /bin/ und target/, sonst verschwindet der Buffer aus <leader>bl.
+local function publish(term_buf, title)
+  if not vim.api.nvim_buf_is_valid(term_buf) then
+    return
+  end
+  local name = (title or "Java Run"):gsub("[\\/%z]", " ")
+  local path = "/colejj/" .. name
+  if not pcall(vim.api.nvim_buf_set_name, term_buf, path) then
+    pcall(vim.api.nvim_buf_set_name, term_buf, path .. " " .. term_buf)
+  end
+  vim.bo[term_buf].buflisted = true
+  vim.bo[term_buf].bufhidden = "hide"
+end
+
 local function string_env(env)
   if type(env) ~= "table" then
     return nil
@@ -64,7 +78,9 @@ local function prepare_window(title)
     pcall(vim.api.nvim_buf_delete, old_buf, { force = true })
   end
 
-  pcall(vim.api.nvim_buf_set_name, buf, title or "Java Run")
+  -- jobstart überschreibt den Namen mit term://…/bin/java …/target/….
+  -- Telescope filtert genau /bin/ und target/ aus der Buffer-Liste.
+  publish(buf, title)
   vim.wo[win].winfixwidth = true
   vim.wo[win].number = false
   vim.wo[win].relativenumber = false
@@ -102,6 +118,14 @@ local function start_job(opts, id)
 
   -- jobstart({term=true}) ruft on_exit unter 0.12 oft nicht auf.
   -- TermClose ist für Terminal-Jobs der verlässliche Hook.
+  vim.api.nvim_create_autocmd("TermOpen", {
+    buffer = term_buf,
+    once = true,
+    callback = function()
+      publish(term_buf, opts.title)
+    end,
+  })
+
   vim.api.nvim_create_autocmd("TermClose", {
     buffer = term_buf,
     once = true,
@@ -122,6 +146,13 @@ local function start_job(opts, id)
       end)
     end,
   }
+  if opts.on_output then
+    job_opts.on_stdout = function(_, data)
+      if id == run_id and data then
+        opts.on_output(data)
+      end
+    end
+  end
   local env = string_env(opts.env)
   if env then
     job_opts.env = env
