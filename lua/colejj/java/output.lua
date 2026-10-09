@@ -27,6 +27,50 @@ local function publish(term_buf, title)
   vim.bo[term_buf].bufhidden = "hide"
 end
 
+local highlights_ready = false
+
+local function define_highlights()
+  if highlights_ready then
+    return
+  end
+  highlights_ready = true
+  local link = function(name, target)
+    vim.api.nvim_set_hl(0, name, { link = target, default = true })
+  end
+  link("JavaRunError", "DiagnosticError")
+  link("JavaRunWarn", "DiagnosticWarn")
+  link("JavaRunInfo", "DiagnosticInfo")
+  link("JavaRunDebug", "Comment")
+  link("JavaRunStack", "DiagnosticError")
+end
+
+local function apply_syntax(target)
+  define_highlights()
+  vim.bo[target].filetype = "java-run"
+  vim.api.nvim_buf_call(target, function()
+    vim.cmd([[
+      syntax enable
+      syntax clear
+      syntax case match
+      syntax match JavaRunDebug /\<\%(DEBUG\|TRACE\)\>/
+      syntax match JavaRunInfo /\<INFO\>/
+      syntax match JavaRunWarn /\<WARN\%(ING\)\?\>/
+      syntax match JavaRunError /\<\%(ERROR\|FATAL\)\>/
+      syntax match JavaRunStack /^\s\+at\s.*/
+      syntax match JavaRunStack /^\s\+\.\.\. \d\+ more\>/
+      syntax match JavaRunError /^\%(Caused by:\|Suppressed:\).*/
+      syntax match JavaRunError /^[A-Za-z0-9_$.][A-Za-z0-9_$.]*\%(Exception\|Error\|Throwable\)\>.*/
+    ]])
+  end)
+end
+
+local function strip_ansi(line)
+  line = line:gsub("\27%][^\7]*\7", "")
+  line = line:gsub("\27%[[%d:;?]*[A-Za-z]", "")
+  line = line:gsub("\r", "")
+  return line
+end
+
 local function string_env(env)
   if type(env) ~= "table" then
     return nil
@@ -85,6 +129,8 @@ local function prepare_window(title)
   vim.wo[win].number = false
   vim.wo[win].relativenumber = false
   vim.wo[win].signcolumn = "no"
+  vim.wo[win].wrap = true
+  vim.wo[win].linebreak = true
 
   vim.keymap.set("n", "q", function()
     if valid_win() then
@@ -103,56 +149,89 @@ local function start_job(opts, id)
   end
 
   prepare_window(opts.title or "Java Run")
-  local term_buf = buf
+  local out_buf = buf
   local finished = false
+  local pending = ""
+  vim.bo[out_buf].buftype = "nofile"
+  vim.bo[out_buf].modifiable = false
+  vim.bo[out_buf].undolevels = -1
+  apply_syntax(out_buf)
+
+  local function append(lines)
+    if id ~= run_id or #lines == 0 or not vim.api.nvim_buf_is_valid(out_buf) then
+      return
+    end
+    local count = vim.api.nvim_buf_line_count(out_buf)
+    local stick = true
+    if valid_win() and vim.api.nvim_win_get_buf(win) == out_buf then
+      stick = vim.api.nvim_win_get_cursor(win)[1] >= count - 1
+    end
+    local replace_blank = count == 1 and vim.api.nvim_buf_get_lines(out_buf, 0, 1, false)[1] == ""
+    vim.bo[out_buf].modifiable = true
+    vim.api.nvim_buf_set_lines(out_buf, replace_blank and 0 or -1, -1, false, lines)
+    vim.bo[out_buf].modifiable = false
+    if stick and valid_win() and vim.api.nvim_win_get_buf(win) == out_buf then
+      pcall(vim.api.nvim_win_set_cursor, win, { vim.api.nvim_buf_line_count(out_buf), 0 })
+    end
+  end
+
+  local function consume(data, flush)
+    if id ~= run_id or type(data) ~= "table" then
+      return {}
+    end
+    if #data == 0 then
+      return {}
+    end
+    data[1] = pending .. data[1]
+    if flush then
+      pending = ""
+    else
+      pending = data[#data]
+      data[#data] = nil
+    end
+    local lines = {}
+    for _, line in ipairs(data) do
+      lines[#lines + 1] = strip_ansi(line)
+    end
+    return lines
+  end
 
   local function finish(code)
     if finished or id ~= run_id then
       return
     end
     finished = true
+    if pending ~= "" then
+      local rest = pending
+      pending = ""
+      append({ strip_ansi(rest) })
+    end
     if opts.on_exit then
       opts.on_exit(tonumber(code) or code or 0)
     end
   end
 
-  -- jobstart({term=true}) ruft on_exit unter 0.12 oft nicht auf.
-  -- TermClose ist für Terminal-Jobs der verlässliche Hook.
-  vim.api.nvim_create_autocmd("TermOpen", {
-    buffer = term_buf,
-    once = true,
-    callback = function()
-      publish(term_buf, opts.title)
-    end,
-  })
-
-  vim.api.nvim_create_autocmd("TermClose", {
-    buffer = term_buf,
-    once = true,
-    callback = function()
-      local code = vim.v.event and vim.v.event.status or 0
-      vim.schedule(function()
-        finish(code)
-      end)
-    end,
-  })
-
   local job_opts = {
     cwd = opts.cwd,
-    term = true,
+    pty = true,
+    width = valid_win() and math.max(vim.api.nvim_win_get_width(win), 80) or 120,
+    height = valid_win() and math.max(vim.api.nvim_win_get_height(win), 20) or 40,
+    on_stdout = function(_, data)
+      if id ~= run_id then
+        return
+      end
+      local lines = consume(data, false)
+      append(lines)
+      if opts.on_output and #lines > 0 then
+        opts.on_output(lines)
+      end
+    end,
     on_exit = function(_, code)
       vim.schedule(function()
         finish(code)
       end)
     end,
   }
-  if opts.on_output then
-    job_opts.on_stdout = function(_, data)
-      if id == run_id and data then
-        opts.on_output(data)
-      end
-    end
-  end
   local env = string_env(opts.env)
   if env then
     job_opts.env = env

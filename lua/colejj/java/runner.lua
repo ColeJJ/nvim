@@ -234,6 +234,156 @@ local function read_classpath(cfg, module_dir)
   return entries
 end
 
+local function newest_mtime(dir)
+  local newest = 0
+  local function walk(path, depth)
+    if depth > 12 then
+      return
+    end
+    local handle = vim.uv.fs_scandir(path)
+    if not handle then
+      return
+    end
+    while true do
+      local name, typ = vim.uv.fs_scandir_next(handle)
+      if not name then
+        break
+      end
+      local full = path .. "/" .. name
+      if typ == "directory" then
+        walk(full, depth + 1)
+      elseif typ == "file" then
+        local st = vim.uv.fs_stat(full)
+        if st and st.mtime.sec > newest then
+          newest = st.mtime.sec
+        end
+      end
+    end
+  end
+  walk(dir, 0)
+  return newest
+end
+
+local function classpath_stale(root, classpath_file)
+  local st = vim.uv.fs_stat(classpath_file)
+  if not st then
+    return true
+  end
+  local limit = st.mtime.sec
+  local function walk(dir, depth)
+    if depth > 6 then
+      return false
+    end
+    local handle = vim.uv.fs_scandir(dir)
+    if not handle then
+      return false
+    end
+    while true do
+      local name, typ = vim.uv.fs_scandir_next(handle)
+      if not name then
+        break
+      end
+      if name ~= "target" and name ~= ".git" and name ~= ".idea" then
+        local full = dir .. "/" .. name
+        if typ == "file" and name == "pom.xml" then
+          local pst = vim.uv.fs_stat(full)
+          if pst and pst.mtime.sec > limit then
+            return true
+          end
+        elseif typ == "directory" and walk(full, depth + 1) then
+          return true
+        end
+      end
+    end
+    return false
+  end
+  return walk(root, 0)
+end
+
+--- Module, deren src/main neuer ist als target/classes.
+local function dirty_modules(root)
+  local dirty = {}
+  local handle = vim.uv.fs_scandir(root)
+  if not handle then
+    return dirty
+  end
+  while true do
+    local name, typ = vim.uv.fs_scandir_next(handle)
+    if not name then
+      break
+    end
+    if typ == "directory" and name ~= "target" and name ~= ".git" and name ~= ".idea" then
+      local dir = root .. "/" .. name
+      if vim.uv.fs_stat(dir .. "/pom.xml") and vim.fn.isdirectory(dir .. "/src/main") == 1 then
+        local out = vim.uv.fs_stat(dir .. "/target/classes")
+        if newest_mtime(dir .. "/src/main") > (out and out.mtime.sec or 0) then
+          dirty[#dirty + 1] = name
+        end
+      end
+    end
+  end
+  table.sort(dirty)
+  return dirty
+end
+
+local function save_sources()
+  for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+    if vim.api.nvim_buf_is_loaded(bufnr) and vim.bo[bufnr].modified and vim.bo[bufnr].buftype == "" then
+      local ft = vim.bo[bufnr].filetype
+      if ft == "java" or ft == "kotlin" or ft == "xml" or ft == "jproperties" then
+        pcall(vim.api.nvim_buf_call, bufnr, function()
+          vim.cmd("silent write")
+        end)
+      end
+    end
+  end
+end
+
+local function java_adapter_ready()
+  local ok, dap = pcall(require, "dap")
+  if ok and dap.adapters.java then
+    return dap
+  end
+end
+
+local function java_session()
+  local ok, dap = pcall(require, "dap")
+  if not ok then
+    return nil
+  end
+  local session = dap.session()
+  if session and session.config and session.config.type == "java" then
+    return session
+  end
+end
+
+local function jdt_build(on_done)
+  local client = vim.lsp.get_clients({ name = "jdtls" })[1]
+  if not client then
+    on_done(false, "JDT.LS ist nicht aktiv")
+    return
+  end
+  local ok, err = pcall(function()
+    client:request("workspace/executeCommand", {
+      command = "vscode.java.buildWorkspace",
+      arguments = { vim.json.encode({ isFullBuild = false }) },
+    }, function(req_err, result)
+      if req_err then
+        on_done(false, req_err.message or vim.inspect(req_err))
+        return
+      end
+      if result == 0 or result == 3 then
+        on_done(false, "Inkrementeller Build fehlgeschlagen")
+        return
+      end
+      on_done(true)
+    end)
+  end)
+  if not ok then
+    on_done(false, tostring(err))
+  end
+end
+
 local function write_args_file(module_dir, classpath)
   local file = module_dir .. "/" .. M.args_file
   vim.fn.mkdir(vim.fn.fnamemodify(file, ":h"), "p")
@@ -290,14 +440,17 @@ local function launch(cfg, debug, module_dir)
   end
   vim.list_extend(cmd, vm)
 
-  local dap, port
-  if debug then
+  -- JDWP auch im Run, suspend=n: die App startet sofort, HotSwap kann Klassen tauschen.
+  local dap = java_adapter_ready()
+  if debug and not dap then
     dap = ensure_java_adapter()
+  end
+  local port
+  if debug or dap then
     port = debug_port()
-    -- Ohne DAP-Adapter nicht suspendieren, sonst hängt die JVM bis zum manuellen Attach.
-    local suspend = dap and "y" or "n"
+    local suspend = (debug and dap) and "y" or "n"
     cmd[#cmd + 1] = "-agentlib:jdwp=transport=dt_socket,server=y,suspend=" .. suspend .. ",address=127.0.0.1:" .. port
-    if not dap then
+    if debug and not dap then
       notify("Kein Java-DAP-Adapter (JDT.LS noch nicht bereit) — JVM lauscht auf :" .. port, vim.log.levels.WARN)
     end
   end
@@ -466,6 +619,28 @@ function M.stop()
   notify("Run gestoppt")
 end
 
+local function start_fast(cfg, debug)
+  remember("java", cfg, debug)
+  save_sources()
+  local root, _, module_dir = module_context(cfg)
+  local cp = module_dir .. "/" .. M.classpath_file
+  if classpath_stale(root, cp) then
+    notify("pom.xml neuer als der Classpath — voller Build")
+    M.start(cfg, debug)
+    return
+  end
+  local dirty = dirty_modules(root)
+  if #dirty == 0 then
+    notify("Keine Quelländerungen — starte neu")
+    launch(cfg, debug, module_dir)
+    return
+  end
+  run_maven(root, { "-pl", table.concat(dirty, ","), "compile" }, "Compile: " .. table.concat(dirty, ", "), function()
+    notify("Compile OK — starte " .. (cfg.name or cfg.main))
+    launch(cfg, debug, module_dir)
+  end)
+end
+
 function M.rerun()
   if not last_run then
     notify("Noch kein Run gestartet", vim.log.levels.WARN)
@@ -478,22 +653,41 @@ function M.rerun()
       remember(kind, cfg, debug)
       start_mvn(cfg, debug)
     else
-      M.start(cfg, debug)
+      start_fast(cfg, debug)
     end
-  end, 800)
+  end, 400)
 end
 
 function M.hotswap()
-  local ok_java, java = pcall(require, "java")
-  if ok_java and java.runner and java.runner.built_in then
-    pcall(function()
-      require("dap").restart()
-    end)
-    notify("HotSwap / Restart angefordert")
+  local session = java_session()
+  if not session then
+    notify("HotSwap braucht eine laufende Session. Einmal mit Run oder Debug starten.", vim.log.levels.WARN)
     return
   end
-  pcall(function()
-    require("dap").repl.execute(".hotcode")
+  save_sources()
+  notify("HotSwap: kompiliere Änderungen…")
+  jdt_build(function(ok, err)
+    if not ok then
+      notify("HotSwap-Build: " .. tostring(err), vim.log.levels.ERROR)
+      return
+    end
+    session:request("redefineClasses", vim.empty_dict(), function(req_err, result)
+      if req_err then
+        notify("HotSwap fehlgeschlagen: " .. (req_err.message or vim.inspect(req_err)), vim.log.levels.ERROR)
+        return
+      end
+      result = result or {}
+      if type(result.errorMessage) == "string" and result.errorMessage ~= "" then
+        notify("HotSwap nicht möglich: " .. result.errorMessage .. " — <leader>re startet neu.", vim.log.levels.WARN)
+        return
+      end
+      local changed = result.changedClasses or {}
+      if #changed == 0 then
+        notify("Keine tauschbaren Klassen. Neue Methoden, Felder oder Kotlin brauchen <leader>re.", vim.log.levels.WARN)
+        return
+      end
+      notify(("%d Klasse(n) neu geladen"):format(#changed))
+    end)
   end)
 end
 
