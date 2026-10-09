@@ -112,6 +112,10 @@ vim.keymap.set("n", "<leader>w<Down>", function()
   win_resize_repeat("down")
 end, { desc = "Fenster nach unten schieben" })
 
+vim.keymap.set("n", "<leader>wz", function()
+  require("colejj.window").zoom()
+end, { desc = "Fenster auf volle Fläche" })
+
 -- Visuelle Auswahl als Suchtext für / und ?
 local function search_with_selection(prefix)
   local text = vim.trim(require("colejj.utils").visual_selection():gsub("[\n\r]+", "\\n"))

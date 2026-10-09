@@ -191,6 +191,7 @@ return {
         { "<leader>wq", desc = "Fenster schließen" },
         { "<leader>wv", desc = "Fenster vertikal splitten" },
         { "<leader>wV", desc = "Fenster horizontal splitten" },
+        { "<leader>wz", desc = "Fenster auf volle Fläche" },
       },
     },
   },

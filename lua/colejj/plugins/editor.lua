@@ -208,7 +208,16 @@ return {
       { "<leader>u", "<cmd>UndotreeToggle<CR>", desc = "Undotree" },
     },
   },
-  { "jiangmiao/auto-pairs", event = "InsertEnter" },
+  {
+    "jiangmiao/auto-pairs",
+    event = "InsertEnter",
+    init = function()
+      -- nvim-cmp mappt <CR> als Lua-Callback ohne "rhs". auto-pairs liest
+      -- maparg() beim BufEnter und bricht sonst mit E716 ab, z.B. wenn
+      -- LazyGit sein Fenster schließt.
+      vim.g.AutoPairsMapCR = 0
+    end,
+  },
   { "alvan/vim-closetag", event = "InsertEnter", ft = { "html", "xml", "xhtml" } },
   {
     "numToStr/Comment.nvim",
