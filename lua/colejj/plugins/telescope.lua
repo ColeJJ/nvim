@@ -134,9 +134,23 @@ return {
           show_all_buffers = true,
           attach_mappings = function(_, map)
             local actions = require("telescope.actions")
+            local action_state = require("telescope.actions.state")
             map({ "i", "n" }, "<C-d>", actions.delete_buffer)
             map("n", "d", actions.delete_buffer)
             map("n", "x", actions.delete_buffer)
+            actions.select_default:replace(function(prompt_bufnr)
+              local entry = action_state.get_selected_entry()
+              actions.close(prompt_bufnr)
+              if not entry or not entry.bufnr or not vim.api.nvim_buf_is_valid(entry.bufnr) then
+                return
+              end
+              local wins = vim.fn.win_findbuf(entry.bufnr)
+              if #wins > 0 then
+                vim.api.nvim_set_current_win(wins[1])
+              else
+                vim.api.nvim_set_current_buf(entry.bufnr)
+              end
+            end)
             return true
           end,
         })
