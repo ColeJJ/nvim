@@ -97,6 +97,86 @@ return {
         require("dapui").eval(expr, { context = "hover", enter = false })
       end
 
+      local dap_cmp_ready = false
+      local function dap_cmp()
+        local cmp = require("cmp")
+        if dap_cmp_ready then
+          return cmp
+        end
+        dap_cmp_ready = true
+        cmp.register_source("dap_expr", {
+          get_trigger_characters = function()
+            return { "." }
+          end,
+          complete = function(_, params, callback)
+            local ok, dap = pcall(require, "dap")
+            local session = ok and dap.session() or nil
+            local before = params.context.cursor_before_line or ""
+            if not session or not session.request then
+              callback({ items = {} })
+              return
+            end
+            session:request("completions", {
+              frameId = (session.current_frame or {}).id,
+              text = before,
+              column = #before + 1,
+            }, function(err, response)
+              if err or not response or not response.targets then
+                callback({ items = {} })
+                return
+              end
+              local items = {}
+              for _, candidate in ipairs(response.targets) do
+                local label = candidate.label or candidate.text
+                if label and label ~= "" then
+                  items[#items + 1] = {
+                    label = label,
+                    insertText = candidate.text or label,
+                    sortText = candidate.sortText,
+                    detail = candidate.detail,
+                    filterText = label,
+                  }
+                end
+              end
+              callback({ items = items })
+            end)
+          end,
+        })
+        return cmp
+      end
+
+      local function complete_expression()
+        local buf = vim.api.nvim_get_current_buf()
+        if vim.bo[buf].filetype ~= "DressingInput" then
+          return
+        end
+        local cmp = dap_cmp()
+        cmp.setup.buffer({
+          enabled = true,
+          sources = { { name = "dap_expr", keyword_length = 1 } },
+        })
+        local keys = { buffer = buf, silent = true }
+        vim.keymap.set("i", "<Tab>", function()
+          if cmp.visible() then
+            cmp.select_next_item({ behavior = cmp.SelectBehavior.Insert })
+          else
+            cmp.complete()
+          end
+        end, keys)
+        vim.keymap.set("i", "<S-Tab>", function()
+          if cmp.visible() then
+            cmp.select_prev_item({ behavior = cmp.SelectBehavior.Insert })
+          end
+        end, keys)
+        vim.keymap.set("i", "<CR>", function()
+          if cmp.visible() then
+            cmp.close()
+          end
+          require("dressing.input").confirm()
+        end, keys)
+        cmp.complete()
+      end
+
       local mouse_eval = false
       local function set_mouse_eval(enabled)
         if enabled == mouse_eval then
@@ -169,6 +249,7 @@ return {
             require("dapui").eval(expr, { context = "repl", enter = true })
           end
         end)
+        vim.schedule(complete_expression)
       end, "Ausdruck eingeben")
       map("<leader>dw", function()
         require("dapui").elements.watches.add()
