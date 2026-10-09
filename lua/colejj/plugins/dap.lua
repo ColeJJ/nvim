@@ -12,8 +12,8 @@ return {
       { "<leader>do" },
       { "<leader>dq" },
       { "<leader>dL" },
+      { "<leader>dh", mode = { "n", "x" } },
       { "<leader>de" },
-      { "<leader>dE" },
       { "<leader>dw" },
       { "<leader>dr" },
       { "<leader>du", mode = { "n", "v" } },
@@ -33,6 +33,9 @@ return {
 
       require("nvim-dap-virtual-text").setup({
         commented = true,
+        -- Werte an der Definition und an jeder Verwendung, auch vor dem Breakpoint.
+        all_references = true,
+        highlight_changed_variables = true,
       })
 
       dapui.setup({
@@ -74,18 +77,57 @@ return {
       vim.fn.sign_define("DapBreakpointCondition", { text = "󰯲", texthl = "DapBreakpoint", linehl = "DapBreakpoint", numhl = "DapBreakpoint" })
       vim.fn.sign_define("DapStopped", { text = "", texthl = "DapStopped", linehl = "DapStopped", numhl = "DapStopped" })
 
+      local function expression_at_cursor()
+        local mode = vim.fn.mode()
+        if mode == "v" or mode == "V" or mode == "\22" then
+          local lines = vim.fn.getregion(vim.fn.getpos("v"), vim.fn.getpos("."), { type = mode })
+          vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, false, true), "n", false)
+          return table.concat(lines, "\n")
+        end
+        return vim.fn.expand("<cexpr>")
+      end
+
+      -- Aufklappbares Fenster wie IntelliJ: Wert, Felder, verschachtelte Objekte.
+      -- Zweites Aufrufen derselben Variable springt in das Fenster (<CR> klappt auf).
+      local function eval_here()
+        local expr = vim.trim(expression_at_cursor() or "")
+        if expr == "" then
+          return
+        end
+        require("dapui").eval(expr, { context = "hover", enter = false })
+      end
+
+      local mouse_eval = false
+      local function set_mouse_eval(enabled)
+        if enabled == mouse_eval then
+          return
+        end
+        mouse_eval = enabled
+        if enabled then
+          vim.keymap.set("n", "<2-LeftMouse>", eval_here, { silent = true, desc = "Variable auswerten" })
+        else
+          pcall(vim.keymap.del, "n", "<2-LeftMouse>")
+        end
+      end
+
       -- DAP-UI erst beim ersten Breakpoint, nicht schon beim Launch.
       dap.listeners.after.event_initialized["dapui_config"] = function() end
       dap.listeners.after.event_stopped["colejj_dapui"] = function(_, body)
+        set_mouse_eval(true)
         local reason = body and body.reason or ""
         if reason == "breakpoint" or reason == "exception" then
           dapui.open()
         end
       end
+      dap.listeners.after.event_continued["colejj_dapui"] = function()
+        set_mouse_eval(false)
+      end
       dap.listeners.before.event_terminated["dapui_config"] = function()
+        set_mouse_eval(false)
         dapui.close()
       end
       dap.listeners.before.event_exited["dapui_config"] = function()
+        set_mouse_eval(false)
         dapui.close()
       end
 
@@ -119,11 +161,12 @@ return {
       map("<leader>do", dap.step_out, "Step Out")
       map("<leader>dq", dap.terminate, "Session beenden")
       map("<leader>dL", dap.run_last, "Letzten Debug wiederholen")
-      map("<leader>de", require("dap.ui.widgets").hover, "Ausdruck auswerten")
-      map("<leader>dE", function()
+      map("<leader>dh", eval_here, "Variable unter Cursor")
+      vim.keymap.set("x", "<leader>dh", eval_here, { silent = true, desc = "Auswahl auswerten" })
+      map("<leader>de", function()
         vim.ui.input({ prompt = "Ausdruck: " }, function(expr)
           if expr and expr ~= "" then
-            require("dapui").eval(expr)
+            require("dapui").eval(expr, { context = "repl", enter = true })
           end
         end)
       end, "Ausdruck eingeben")
